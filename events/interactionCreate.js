@@ -17,7 +17,6 @@ const {
 const fs = require('fs');
 const profileModel = require('../models/profileSchema.js');
 const pomodoro = require('../lib/pomodoro/main.js');
-const generatePomodoroPicture = require('../lib/pomodoro/pictureGenerator.js');
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -193,91 +192,12 @@ module.exports = async (client, interaction) => {
 					}
 					case 'pomodoro_update': {
 						try {
-							// ステータス取得
-							let status;
-							if (interaction.message.content.startsWith('作業時間')) {
-								status = 'work';
-							} else if (interaction.message.content.startsWith('休憩時間')) {
-								status = 'break';
-							} else if (
-								interaction.message.content.startsWith('長めの休憩時間')
-							) {
-								status = 'longBreak';
-							}
-
-							// ポモドーロタイマーの状態取得とステータスの確認
 							const pomodoroState = await pomodoro.getPomodoroState(
 								client,
 								interaction.guild.id,
 							);
-							if (!pomodoroState.running) {
-								const embed = new EmbedBuilder().setTitle(
-									'❌ ポモドーロタイマーが実行されていません。',
-								);
-								await interaction.message.edit({
-									content: '',
-									embeds: [embed],
-									files: [],
-									components: [],
-								});
-								return interaction.deferUpdate();
-							}
 
-							// メッセージ準備
-							const { workTime, breakTime, longBreakTime } =
-								pomodoroState.options;
-
-							const img = new AttachmentBuilder()
-								.setName('pomodoro.png')
-								.setFile(await generatePomodoroPicture(status, pomodoroState));
-							const embed = new EmbedBuilder()
-								.setImage('attachment://pomodoro.png')
-								.setColor(0x00ff00)
-								.setTimestamp();
-
-							// 次のステータスの時間を取得
-							let nextStatus;
-							switch (pomodoroState.nextStatus) {
-								case 'work':
-									nextStatus = '作業時間';
-									break;
-								case 'break':
-									nextStatus = '休憩時間';
-									break;
-								case 'longBreak':
-									nextStatus = '長めの休憩時間';
-									break;
-							}
-							const remainingSeconds = pomodoroState.remainingSeconds;
-							const nowUnixTimeStamp = Math.floor(Date.now() / 1000);
-							const nextStatusTimestamp = nowUnixTimeStamp + remainingSeconds;
-
-							let messageContent;
-							if (status === 'work') {
-								messageContent = `作業時間 ${workTime}分 開始しました！ (${pomodoroState.currentCycle}サイクル目)\n 次のステータス: ${nextStatus} (<t:${nextStatusTimestamp}:R>)`;
-							} else if (status === 'break') {
-								messageContent = `休憩時間 ${breakTime}分 開始しました！\n 次のステータス: ${nextStatus} (<t:${nextStatusTimestamp}:R>)`;
-							} else if (status === 'longBreak') {
-								messageContent = `長めの休憩時間 ${longBreakTime}分 開始しました！\n 次のステータス: ${nextStatus} (<t:${nextStatusTimestamp}:R>)`;
-							}
-
-							const button = new ActionRowBuilder().addComponents(
-								new ButtonBuilder()
-									.setCustomId('pomodoro_update')
-									.setStyle(ButtonStyle.Success)
-									.setLabel('更新'),
-								new ButtonBuilder()
-									.setCustomId('pomodoro_stop')
-									.setStyle(ButtonStyle.Danger)
-									.setLabel('ポモドーロタイマーを終了する'),
-							);
-
-							await interaction.message.edit({
-								content: messageContent,
-								embeds: [embed],
-								files: [img],
-								components: [button],
-							});
+							await pomodoro.sendPomodoroStatus(interaction, pomodoroState);
 
 							return interaction.deferUpdate();
 						} catch (err) {

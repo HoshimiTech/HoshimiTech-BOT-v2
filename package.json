@@ -21,7 +21,6 @@
 		"@distube/ytsr": "^2.0.4",
 		"@snazzah/davey": "^0.1.12",
 		"adm-zip": "^0.5.17",
-		"canvas": "^3.2.3",
 		"cheerio": "^1.2.0",
 		"discord-html-transcripts": "^3.3.0-next-5eed3d",
 		"discord.js": "^14.26.4",
@@ -42,7 +41,6 @@
 		"prettier": "^3.8.4"
 	},
 	"allowScripts": {
-		"@discordjs/opus@0.10.0": true,
-		"canvas@3.2.3": true
+		"@discordjs/opus@0.10.0": true
 	}
 }
