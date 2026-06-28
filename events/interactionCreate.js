@@ -9,7 +9,6 @@ const {
 	ButtonStyle,
 	ButtonBuilder,
 	MessageFlags,
-	AttachmentBuilder,
 	LabelBuilder,
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
