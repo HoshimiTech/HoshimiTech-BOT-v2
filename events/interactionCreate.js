@@ -220,19 +220,16 @@ module.exports = async (client, interaction) => {
 							interaction.guild.id,
 						);
 						if (!pomodoroState.running) {
-							const embed = new EmbedBuilder().setTitle(
-								'❌ ポモドーロタイマーが実行されていません。',
-							);
 							await interaction.message.edit({
-								content: '',
-								embeds: [embed],
+								content: '❌ ポモドーロタイマーが実行されていません。',
+								embeds: [],
 								files: [],
 								components: [],
 							});
-							return interaction.deferUpdate();
 						}
 
-						return pomodoro.stop(client, interaction);
+						await pomodoro.stop(client, interaction);
+						return interaction.deferUpdate();
 					}
 					case 'cancel': {
 						return interaction.message.delete();
