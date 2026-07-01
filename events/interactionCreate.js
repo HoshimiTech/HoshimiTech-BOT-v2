@@ -205,8 +205,8 @@ module.exports = async (client, interaction) => {
 							return interaction.deferUpdate();
 						}
 
-						await pomodoro.sendPomodoroStatus(interaction, pomodoroState);
-						return interaction.deferUpdate();
+						await interaction.deferUpdate();
+						return pomodoro.sendPomodoroStatus(interaction, pomodoroState);
 					}
 					case 'pomodoro_stop': {
 						// ポモドーロタイマーの状態取得とステータスの確認
