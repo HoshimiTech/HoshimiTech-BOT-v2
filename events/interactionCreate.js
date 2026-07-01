@@ -226,10 +226,10 @@ module.exports = async (client, interaction) => {
 								files: [],
 								components: [],
 							});
+							return interaction.deferUpdate();
 						}
 
-						await pomodoro.stop(client, interaction);
-						return interaction.deferUpdate();
+						return pomodoro.stop(client, interaction);
 					}
 					case 'cancel': {
 						return interaction.message.delete();
