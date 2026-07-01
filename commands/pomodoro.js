@@ -71,7 +71,7 @@ module.exports = {
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('stop')
-				.setDescription('ポモドーロタイマーを強制終了します。'),
+				.setDescription('ポモドーロタイマーを終了します。'),
 		)
 		.addSubcommandGroup((subcommands) =>
 			subcommands
