@@ -71,13 +71,7 @@ module.exports = {
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('stop')
-				.setDescription('ポモドーロタイマーを終了します。')
-				.addBooleanOption((option) =>
-					option
-						.setName('force')
-						.setDescription('強制終了する場合はtrueを指定してください。')
-						.setRequired(false),
-				),
+				.setDescription('ポモドーロタイマーを終了します。'),
 		)
 		.addSubcommandGroup((subcommands) =>
 			subcommands
@@ -240,8 +234,7 @@ module.exports = {
 			} else if (mode === 'status') {
 				await pomodoro.status(client, interaction);
 			} else if (mode === 'stop') {
-				const force = interaction.options.getBoolean('force') || false;
-				await pomodoro.stop(client, interaction, force);
+				await pomodoro.stop(client, interaction);
 			} else if (mode === 'settings') {
 				// 権限チェック
 				if (
