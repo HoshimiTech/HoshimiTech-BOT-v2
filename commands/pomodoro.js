@@ -239,8 +239,8 @@ module.exports = {
 				});
 			} else if (mode === 'status') {
 				await pomodoro.status(client, interaction);
-      } else if (mode === 'stop') {
-        const force = interaction.options.getBoolean('force') || false;
+			} else if (mode === 'stop') {
+				const force = interaction.options.getBoolean('force') || false;
 				await pomodoro.stop(client, interaction, force);
 			} else if (mode === 'settings') {
 				// 権限チェック
