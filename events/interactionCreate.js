@@ -190,28 +190,22 @@ module.exports = async (client, interaction) => {
 						return interaction.showModal(modal);
 					}
 					case 'pomodoro_update': {
-						try {
-							const pomodoroState = await pomodoro.getPomodoroState(
-								client,
-								interaction.guild.id,
-							);
-
-							await pomodoro.sendPomodoroStatus(interaction, pomodoroState);
-
-							return interaction.deferUpdate();
-						} catch (err) {
-							console.error(err);
-							const embed = new EmbedBuilder()
-								.setTitle('❌ エラーが発生しました。')
-								.setColor(0xff0000);
+						// ポモドーロタイマーの状態取得とステータスの確認
+						const pomodoroState = await pomodoro.getPomodoroState(
+							client,
+							interaction.guild.id,
+						);
+						if (!pomodoroState.running) {
 							await interaction.message.edit({
-								content: '',
-								embeds: [embed],
+								content: '❌ ポモドーロタイマーが実行されていません。',
+								embeds: [],
 								files: [],
 								components: [],
 							});
 							return interaction.deferUpdate();
 						}
+
+						return pomodoro.sendPomodoroStatus(interaction, pomodoroState);
 					}
 					case 'pomodoro_stop': {
 						// ポモドーロタイマーの状態取得とステータスの確認
