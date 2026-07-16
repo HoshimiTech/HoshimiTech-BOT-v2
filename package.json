@@ -15,7 +15,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@discordjs/node-pre-gyp": "git@github.com:Hoshimikan6490/node-pre-gyp.git#dependencies-update",
+		"@discordjs/node-pre-gyp": "npm:@hoshimikan6490/node-pre-gyp@0.0.4",
 		"@discordjs/opus": "^0.10.0",
 		"@discordjs/voice": "^0.19.2",
 		"@distube/ytsr": "^2.0.4",

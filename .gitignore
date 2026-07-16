@@ -1,6 +1,7 @@
 # いつもの
 node_modules
 .env
+.npmrc
 
 # lib/voicevoxは除外
 lib/pomodoro/voicevox/*
