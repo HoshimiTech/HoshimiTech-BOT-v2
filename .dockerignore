@@ -1,0 +1,16 @@
+# Local-only files and directories
+/.git
+/.github
+/.vscode
+/.cache
+/node_modules
+
+# Build context does not need project docs or editor config
+.gitignore
+.prettierignore
+.prettierrc.json
+README.md
+LICENSE
+docker-compose.yml
+eslint.config.mjs
+renovate.json

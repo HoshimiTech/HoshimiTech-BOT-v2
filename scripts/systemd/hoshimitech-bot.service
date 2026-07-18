@@ -1,0 +1,15 @@
+[Unit]
+Description=HoshimiTech Discord Bot
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{WORKING_DIRECTORY}}
+ExecStart=/usr/bin/docker compose -f {{PROJECT_ROOT}}/docker-compose.yml up -d --build
+ExecStop=/usr/bin/docker compose -f {{PROJECT_ROOT}}/docker-compose.yml down --rmi all --volumes --remove-orphans
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
