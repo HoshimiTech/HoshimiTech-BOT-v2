@@ -128,11 +128,13 @@ module.exports = {
 								const card = cardResult.data;
 								await interaction.reply({
 									content: `カードが作成されました！\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
+									flags: MessageFlags.Ephemeral,
 								});
 							} else if (cardResult.data && cardResult.data?.alreadyExists) {
 								const card = cardResult.data;
 								await interaction.reply({
 									content: `そのキーワードのカードは既に存在します！更新する場合は一度カードを削除してから再度作成してください。\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
+									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
@@ -164,10 +166,12 @@ module.exports = {
 									.join('\n');
 								await interaction.reply({
 									content: `以下のカードがあります:\n${cardList}`,
+									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
 									content: 'カードが見つかりませんでした。',
+									flags: MessageFlags.Ephemeral,
 								});
 							}
 							break;
@@ -187,6 +191,7 @@ module.exports = {
 							} else if (deleteResult.success && deleteResult.data) {
 								await interaction.reply({
 									content: `カードが削除されました！\n削除されたカード: ${deleteWord}`,
+									flags: MessageFlags.Ephemeral,
 								});
 							}
 							break;
@@ -207,6 +212,7 @@ module.exports = {
 							if (result.success) {
 								await interaction.reply({
 									content: `カテゴリー「${result.categoryName}」が作成されました！\nこのカテゴリーはカード作成時に選択できるようになります。`,
+									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
@@ -233,10 +239,12 @@ module.exports = {
 									const categoryList = categories.join(', ');
 									await interaction.reply({
 										content: `利用可能なカテゴリー:\n${categoryList}`,
+										flags: MessageFlags.Ephemeral,
 									});
 								} else {
 									await interaction.reply({
 										content: '利用可能なカテゴリーがありません。',
+										flags: MessageFlags.Ephemeral,
 									});
 								}
 							}
@@ -254,6 +262,7 @@ module.exports = {
 							if (deleteResult.success) {
 								await interaction.reply({
 									content: `カテゴリー「${categoryNameToDelete}」が削除されました。`,
+									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
