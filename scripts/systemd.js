@@ -81,6 +81,7 @@ function uninstall() {
 			stdio: 'inherit',
 		});
 	} catch (_error) {
+		void _error;
 		// The service may already be stopped or not installed.
 	}
 
