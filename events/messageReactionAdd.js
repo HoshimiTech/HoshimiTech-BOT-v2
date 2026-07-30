@@ -4,7 +4,7 @@ const {
 	ButtonStyle,
 	MessageFlags,
 } = require('discord.js');
-const profileSchema = require('../models/profileSchema');
+const serverSchema = require('../models/serverSchema.js');
 const messageTransport = require('../lib/messageTransport.js');
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
@@ -17,13 +17,15 @@ module.exports = async (client, reaction, user) => {
 	if (user.bot) return;
 
 	//db取得して、該当するメッセージは転送
-	profileSchema
+	serverSchema
 		.findById(reaction.message.guild.id)
-		.then((result) => {
+		.then((serverData) => {
 			// ステータス確認
-			if (!result.starboard.status) return;
+			if (!serverData.starboard.status) return;
 			// 既に送信済みか確認
-			if (result.starboard.transportedMessages.includes(reaction.message?.id))
+			if (
+				serverData.starboard.transportedMessages.includes(reaction.message?.id)
+			)
 				return;
 
 			// 絵文字の種類を判定
@@ -35,7 +37,7 @@ module.exports = async (client, reaction, user) => {
 			}
 
 			// 該当する絵文字か判定
-			const emojis = result.starboard.board.map((board) => board.emoji);
+			const emojis = serverData.starboard.board.map((board) => board.emoji);
 			if (emojis.includes(reaction.emoji.name)) {
 				// 該当する絵文字の場合、絵文字数を確認する
 				reaction.message
@@ -46,7 +48,7 @@ module.exports = async (client, reaction, user) => {
 							reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name,
 						).count;
 
-						const boardInfo = result.starboard.board.find(
+						const boardInfo = serverData.starboard.board.find(
 							(board) => board.emoji === reaction.emoji.name,
 						);
 						if (reactionCount >= boardInfo.emojiAmount) {
@@ -54,8 +56,8 @@ module.exports = async (client, reaction, user) => {
 							await messageTransport(client, message, boardInfo._id);
 
 							// 転送したメッセージIDを保存
-							result.starboard.transportedMessages.push(message.id);
-							result.save().catch((err) => {
+							serverData.starboard.transportedMessages.push(message.id);
+							serverData.save().catch((err) => {
 								console.error(err);
 							});
 						}

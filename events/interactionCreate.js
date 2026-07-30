@@ -14,7 +14,7 @@ const {
 	StringSelectMenuOptionBuilder,
 } = require('discord.js');
 const fs = require('fs');
-const profileModel = require('../models/profileSchema.js');
+const serverSchema = require('../models/serverSchema.js');
 const pomodoro = require('../lib/pomodoro/main.js');
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
@@ -237,9 +237,9 @@ module.exports = async (client, interaction) => {
 				switch (interaction?.customId) {
 					case 'ask_register_id': {
 						const id = interaction.fields.getTextInputValue('register_id');
-						const profileData = await profileModel.findById(id);
-						if (!profileData) {
-							const profile = await profileModel.create({
+						let serverData = await serverSchema.findById(id);
+						if (!serverData) {
+							serverData = await serverSchema.create({
 								_id: id,
 								sticky: {
 									status: false,
@@ -252,7 +252,7 @@ module.exports = async (client, interaction) => {
 								},
 								// ポモドーロタイマーの設定は、スキーマから設定
 							});
-							profile
+							serverData
 								.save()
 								.catch(async (err) => {
 									await interaction.reply(
@@ -272,9 +272,9 @@ module.exports = async (client, interaction) => {
 					}
 					case 'ask_unregister_id': {
 						const id = interaction.fields.getTextInputValue('unregister_id');
-						const profileData = await profileModel.findById(id);
-						if (profileData) {
-							profileModel
+						const serverData = await serverSchema.findById(id);
+						if (serverData) {
+							serverSchema
 								.deleteOne({ _id: id })
 								.then(async () => {
 									await interaction.reply('✅　登録を解除しました。');
@@ -318,16 +318,16 @@ module.exports = async (client, interaction) => {
 								.setTimestamp();
 
 							// DBのデータを取得
-							let data = await profileModel.findById({ _id: server });
-							if (!data) {
-								data = 'データがありません';
+							let serverData = await serverSchema.findById({ _id: server });
+							if (!serverData) {
+								serverData = 'データがありません';
 							} else {
-								data = JSON.stringify(data);
+								serverData = JSON.stringify(serverData);
 							}
 
 							const embed2 = new EmbedBuilder()
 								.setTitle(`ℹ️ サーバー「${guild.name}」関連のデータベース情報`)
-								.setDescription(`\`\`\`json\n${data}\n\`\`\``)
+								.setDescription(`\`\`\`json\n${serverData}\n\`\`\``)
 								.setTimestamp();
 
 							await interaction
@@ -476,17 +476,17 @@ module.exports = async (client, interaction) => {
 
 							const all_guild_id = [];
 
-							await profileModel.find({}).then(async (all_data) => {
-								for (const data of all_data) {
-									all_guild_id.push(data._id);
+							await serverSchema.find({}).then(async (allServerData) => {
+								for (const serverData of allServerData) {
+									all_guild_id.push(serverData._id);
 								}
 
 								for (const guild_id of all_guild_id) {
-									const doc = await profileModel.findById(guild_id);
-									doc[variable_name] = variable_value;
-									await doc.save().then(() => {
+									const serverData = await serverSchema.findById(guild_id);
+									serverData[variable_name] = variable_value;
+									await serverData.save().then(() => {
 										console.log(
-											`${guild_id} is updated as this!\n${JSON.stringify(doc)}`,
+											`${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
 										);
 
 										return interaction.reply('done');
@@ -496,16 +496,16 @@ module.exports = async (client, interaction) => {
 						} else if (how_to === 'remove') {
 							const all_guild_id = [];
 
-							await profileModel.find({}).then(async (all_data) => {
-								for (const data of all_data) {
-									all_guild_id.push(data._id);
+							await serverSchema.find({}).then(async (allServerData) => {
+								for (const serverData of allServerData) {
+									all_guild_id.push(serverData._id);
 								}
 
 								for (const guild_id of all_guild_id) {
-									await profileModel.findById(guild_id).then((data) => {
-										data[variable_name] = undefined;
+									await serverSchema.findById(guild_id).then((serverData) => {
+										serverData[variable_name] = undefined;
 
-										data.save().then(() => {
+										serverData.save().then(() => {
 											console.info('updated!');
 										});
 									});
@@ -568,19 +568,19 @@ module.exports = async (client, interaction) => {
 								void err;
 							});
 						// DBを更新(ステータスとメッセージ内容とメッセージID)
-						profileModel
+						serverSchema
 							.findById(interaction.guild.id)
-							.then((result) => {
+							.then((serverData) => {
 								// 既にそのチャンネルに固定メッセージがある場合は、エラー出して終了
-								if (result.sticky.channels.find((c) => c._id === channelId))
+								if (serverData.sticky.channels.find((c) => c._id === channelId))
 									return interaction.reply({
 										content:
 											'このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
 										flags: MessageFlags.Ephemeral,
 									});
 
-								result.sticky.status = true;
-								result.sticky.channels.push({
+								serverData.sticky.status = true;
+								serverData.sticky.channels.push({
 									_id: channelId,
 									stickyMessage: {
 										oldMessageId: stickyMessage.id,
@@ -591,7 +591,7 @@ module.exports = async (client, interaction) => {
 										},
 									},
 								});
-								result
+								serverData
 									.save()
 									.then(() => {
 										return interaction.reply({
@@ -650,8 +650,10 @@ module.exports = async (client, interaction) => {
 				switch (interaction.commandName) {
 					case 'starboard': {
 						if (subcommand === 'off') {
-							const db = await profileModel.findById(interaction.guild.id);
-							const boards = db.starboard.board;
+							const serverData = await serverSchema.findById(
+								interaction.guild.id,
+							);
+							const boards = serverData.starboard.board;
 							const choices = [];
 
 							// 選択肢を生成

@@ -48,7 +48,7 @@ module.exports = {
 		);
 		await interaction.editReply({
 			content:
-				'何をしますか？\n\n# __**※※データベース更新の際は、必ずプログラム内の「/models/profileSchema.js」を更新後に追加/削除を行ってください。それを行わないと、正常に更新できません※※**__',
+				'何をしますか？\n\n# __**※※データベース更新の際は、必ずプログラム内の「/models/＊＊＊Schema.js」を更新後に追加/削除を行ってください。それを行わないと、正常に更新できません※※**__',
 			flags: MessageFlags.Ephemeral,
 			components: [buttons],
 		});

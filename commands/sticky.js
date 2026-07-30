@@ -9,7 +9,7 @@ const {
 	ButtonStyle,
 	LabelBuilder,
 } = require('discord.js');
-const profileSchema = require('../models/profileSchema.js');
+const serverSchema = require('../models/serverSchema.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -38,11 +38,11 @@ module.exports = {
 			const subcommand = await interaction.options.getSubcommand();
 
 			if (subcommand === 'on') {
-				profileSchema
+				serverSchema
 					.findById(interaction.guild.id)
-					.then(async (result) => {
+					.then(async (serverData) => {
 						if (
-							result.sticky.channels.find(
+							serverData.sticky.channels.find(
 								(c) => c._id === interaction.channel.id,
 							)
 						)
@@ -104,12 +104,12 @@ module.exports = {
 						errorNotification(client, interaction, err);
 					});
 			} else if (subcommand === 'clear') {
-				profileSchema
+				serverSchema
 					.findById(interaction.guild.id)
-					.then(async (result) => {
+					.then(async (serverData) => {
 						// 古いメッセージを削除出来そうならする
 						try {
-							const stickyChannel = result.sticky.channels.find(
+							const stickyChannel = serverData.sticky.channels.find(
 								(c) => c._id === interaction.channel.id,
 							);
 							const oldMessage = await interaction.channel.messages.fetch(
@@ -124,14 +124,15 @@ module.exports = {
 						}
 
 						// このチャンネルのデータを削除
-						result.sticky.channels = result.sticky.channels.filter(
+						serverData.sticky.channels = serverData.sticky.channels.filter(
 							(c) => c._id !== interaction.channel.id,
 						);
 						// 全てのチャンネルで無効化しているならoffに
-						if (!result.sticky.channels.length) result.sticky.status = false;
+						if (!serverData.sticky.channels.length)
+							serverData.sticky.status = false;
 
 						// 保存する
-						await result
+						await serverData
 							.save()
 							.then(() => {
 								return interaction.reply({
@@ -180,15 +181,15 @@ module.exports = {
 						});
 					});
 			} else if (subcommand === 'off') {
-				profileSchema
+				serverSchema
 					.findById(interaction.guild.id)
-					.then(async (result) => {
+					.then(async (serverData) => {
 						// このチャンネルのデータを削除
-						result.sticky.status = false;
-						result.sticky.channels = [];
+						serverData.sticky.status = false;
+						serverData.sticky.channels = [];
 
 						// 保存する
-						await result
+						await serverData
 							.save()
 							.then(() => {
 								return interaction.reply({

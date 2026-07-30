@@ -111,8 +111,7 @@ module.exports = {
 							const word = interaction.options.getString('word');
 							const meaning = interaction.options.getString('meaning');
 							const category = interaction.options.getString('category');
-							const cardResult = await flashcard.add(
-								interaction.guild.id,
+							const cardResult = await flashcard.createCard(
 								interaction.user.id,
 								word,
 								meaning,
@@ -120,7 +119,9 @@ module.exports = {
 							);
 							if (!cardResult.success) {
 								await interaction.reply({
-									content: cardResult.error,
+									content:
+										cardResult.error ||
+										'カードの作成に失敗しました。不明なエラーが発生した可能性が有ります。時間を空けて再度お試しください。',
 									flags: MessageFlags.Ephemeral,
 								});
 							} else if (cardResult.data && !cardResult.data?.alreadyExists) {
@@ -146,11 +147,9 @@ module.exports = {
 							// カード一覧表示のロジック
 							const categoryFilter = interaction.options.getString('category');
 
-							const cardsResult = await flashcard.getCard(
-								interaction.guild.id,
-								interaction.user.id,
-								{ category: categoryFilter },
-							);
+							const cardsResult = await flashcard.getCard(interaction.user.id, {
+								category: categoryFilter,
+							});
 							if (!cardsResult.success) {
 								await interaction.reply({
 									content: cardsResult.error,
@@ -177,7 +176,6 @@ module.exports = {
 							// カード削除のロジック
 							const deleteWord = interaction.options.getString('word');
 							const deleteResult = await flashcard.deleteCard(
-								interaction.guild.id,
 								interaction.user.id,
 								deleteWord,
 							);
@@ -186,14 +184,9 @@ module.exports = {
 									content: deleteResult.error,
 									flags: MessageFlags.Ephemeral,
 								});
-							} else if (deleteResult.data) {
+							} else if (deleteResult.success && deleteResult.data) {
 								await interaction.reply({
 									content: `カードが削除されました！\n削除されたカード: ${deleteWord}`,
-								});
-							} else {
-								await interaction.reply({
-									content: `指定されたカード「${deleteWord}」が見つかりませんでした。カードの表面の単語を正確に入力してください。`,
-									flags: MessageFlags.Ephemeral,
 								});
 							}
 							break;
@@ -207,7 +200,6 @@ module.exports = {
 							// カテゴリー作成のロジック
 							const categoryName = interaction.options.getString('name');
 							const result = await flashcard.createCategory(
-								interaction.guild.id,
 								interaction.user.id,
 								categoryName,
 							);
@@ -227,7 +219,6 @@ module.exports = {
 						case 'list': {
 							// カテゴリー一覧表示のロジック
 							const categoriesResult = await flashcard.getCategories(
-								interaction.guild.id,
 								interaction.user.id,
 							);
 
@@ -256,7 +247,6 @@ module.exports = {
 							const categoryNameToDelete =
 								interaction.options.getString('name');
 							const deleteResult = await flashcard.deleteCategory(
-								interaction.guild.id,
 								interaction.user.id,
 								categoryNameToDelete,
 							);

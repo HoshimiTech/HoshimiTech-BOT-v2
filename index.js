@@ -80,7 +80,7 @@ if (discord_token) {
 if (mongodb_TOKEN) {
 	//mongooseについて
 	mongoose
-		.connect(mongodb_TOKEN, { dbName: 'serverDB' })
+		.connect(mongodb_TOKEN, { dbName: 'database' })
 		.then(() => {
 			console.info('データベースに接続したんだゾ');
 		})

@@ -1,7 +1,7 @@
 const { REST, Routes, ActivityType } = require('discord.js');
 const os = require('node:os');
 require('dotenv').config({ quiet: true });
-const profileModel = require('../models/profileSchema');
+const serverSchema = require('../models/serverSchema.js');
 const { init } = require('../lib/pomodoro/main.js');
 const discord_token = process.env.discord_bot_token;
 const consoleChannel = process.env.discord_bot_console;
@@ -42,9 +42,9 @@ module.exports = async (client) => {
 
 	//登録外のサーバーがあれば、自動登録し、ポモドーロタイマーの設定をする
 	client.guilds.cache.forEach(async (guild) => {
-		await profileModel.findById(guild.id).then(async (model) => {
-			if (!model) {
-				const profile = await profileModel.create({
+		await serverSchema.findById(guild.id).then(async (serverData) => {
+			if (!serverData) {
+				serverData = await serverSchema.create({
 					_id: guild.id,
 					sticky: {
 						status: false,
@@ -57,7 +57,7 @@ module.exports = async (client) => {
 					},
 					// ポモドーロタイマーの設定は、スキーマから設定
 				});
-				profile
+				await serverData
 					.save()
 					.then(() => {
 						console.info(`未登録のサーバーID「${guild.id}」を新規登録しました`);
@@ -84,16 +84,16 @@ module.exports = async (client) => {
 
 	//登録済みのサーバーの中で、退出済みの物があれば削除する
 	const allGuildID = [];
-	await profileModel.find().then(async (allData) => {
-		for (const data of allData) {
-			allGuildID.push(data._id);
+	await serverSchema.find().then(async (allServerData) => {
+		for (const serverData of allServerData) {
+			allGuildID.push(serverData._id);
 		}
 
 		for (const guildID of allGuildID) {
 			const guild = client.guilds.cache.get(guildID);
 
 			if (!guild) {
-				await profileModel
+				await serverSchema
 					.deleteOne({ _id: guildID })
 					.then(() => {
 						return console.info(

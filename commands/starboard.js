@@ -11,7 +11,7 @@ const {
 require('dotenv').config({ quiet: true });
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
-const profileSchema = require('../models/profileSchema.js');
+const serverSchema = require('../models/serverSchema.js');
 
 function checkInput(sendChannel, emoji, emojiCount) {
 	const errList = [];
@@ -179,27 +179,27 @@ module.exports = {
 				}
 
 				// db登録
-				profileSchema
+				serverSchema
 					.findById(interaction.guild.id)
-					.then(async (result) => {
+					.then(async (serverData) => {
 						// 多重登録防止の仕組み
-						const isAlreadyRegistered = result.starboard.board.some(
+						const isAlreadyRegistered = serverData.starboard.board.some(
 							(board) => board._id === sendChannel.id,
 						);
 						if (isAlreadyRegistered) {
-							result.starboard.board = result.starboard.board.filter(
+							serverData.starboard.board = serverData.starboard.board.filter(
 								(board) => board._id !== sendChannel.id,
 							);
 						}
 
-						result.starboard.status = true;
-						result.starboard.board.push({
+						serverData.starboard.status = true;
+						serverData.starboard.board.push({
 							_id: sendChannel.id,
 							emoji: pursedEmoji,
 							emojiAmount: emojiCount,
 						});
 
-						await result
+						await serverData
 							.save()
 							.then(() => {
 								return interaction.reply({
@@ -238,11 +238,11 @@ module.exports = {
 			}
 		} else if (subcommand === 'view') {
 			try {
-				const db = await profileSchema.findById(interaction.guild.id);
+				const serverData = await serverSchema.findById(interaction.guild.id);
 
 				// スターボードが設定されていない場合の処理
-				const starBoards = db.starboard.board;
-				if (!db.starboard.status && starBoards.length === 0) {
+				const starBoards = serverData.starboard.board;
+				if (!serverData.starboard.status && starBoards.length === 0) {
 					return interaction.reply({
 						content: 'このサーバーにはスターボードの設定がありません。',
 						flags: MessageFlags.Ephemeral,
@@ -250,8 +250,10 @@ module.exports = {
 				}
 
 				// データがおかしいときは、サポ鯖を案内
-				const dataCheck1 = !db.starboard.status && starBoards.length !== 0;
-				const dataCheck2 = db.starboard.status && starBoards.length === 0;
+				const dataCheck1 =
+					!serverData.starboard.status && starBoards.length !== 0;
+				const dataCheck2 =
+					serverData.starboard.status && starBoards.length === 0;
 				if (dataCheck1 || dataCheck2)
 					return interaction.reply({
 						content:
@@ -264,7 +266,7 @@ module.exports = {
 					.setTitle('このサーバーのスターボード設定')
 					.setColor(0x00ff00)
 					.setDescription(
-						db.starboard.board
+						serverData.starboard.board
 							.map(
 								(board, index) =>
 									`**${index + 1}.** 送信先チャンネル: <#${
@@ -288,19 +290,20 @@ module.exports = {
 				const deleteChannelId = interaction.options.getString(
 					'starboard_to_be_deleted',
 				);
-				const db = await profileSchema.findById(interaction.guild.id);
-				const dataLength = db.starboard.board.length;
-				db.starboard.board = db.starboard.board.filter(
+				const serverData = await serverSchema.findById(interaction.guild.id);
+				const dataLength = serverData.starboard.board.length;
+				serverData.starboard.board = serverData.starboard.board.filter(
 					(board) => board._id !== deleteChannelId,
 				);
 
 				// 変更が無かった場合は、エラーを表示
-				if (dataLength === db.starboard.board.length)
+				if (dataLength === serverData.starboard.board.length)
 					return interaction.reply('❌ そのデータは見つかりませんでした。');
 
 				// 変更が合った場合は保存して完了
-				if (!db.starboard.board.length) db.starboard.status = false;
-				db.save();
+				if (!serverData.starboard.board.length)
+					serverData.starboard.status = false;
+				await serverData.save();
 				return interaction.reply('✅データの削除に成功しました！');
 			} catch (err) {
 				console.error(err);

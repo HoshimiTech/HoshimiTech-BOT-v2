@@ -1,5 +1,5 @@
 const { MessageFlags, EmbedBuilder } = require('discord.js');
-const profileModel = require('../models/profileSchema.js');
+const serverSchema = require('../models/serverSchema.js');
 
 module.exports = (client, message) => {
 	// botは無視
@@ -23,14 +23,14 @@ module.exports = (client, message) => {
 
 	// sticky処理
 	// DB取得し、チャンネル照合
-	profileModel
+	serverSchema
 		.findById(message.guild.id)
-		.then(async (result) => {
+		.then(async (serverData) => {
 			// ステータス確認
-			if (!result.sticky.status) return;
+			if (!serverData.sticky.status) return;
 
 			// sticky対象チャンネルか確認
-			const stickyChannel = result.sticky.channels.find(
+			const stickyChannel = serverData.sticky.channels.find(
 				(c) => c._id === message.channel.id,
 			);
 			if (stickyChannel) {
@@ -74,7 +74,7 @@ module.exports = (client, message) => {
 
 				// DBのメッセージIDを更新
 				stickyChannel.stickyMessage.oldMessageId = newStickyMessage.id;
-				await result.save();
+				await serverData.save();
 			}
 		})
 		.catch((err) => {

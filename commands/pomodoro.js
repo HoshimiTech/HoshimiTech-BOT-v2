@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
 const pomodoro = require('../lib/pomodoro/main.js');
-const profileSchema = require('../models/profileSchema.js');
+const serverSchema = require('../models/serverSchema.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -253,31 +253,31 @@ module.exports = {
 							void err;
 						});
 
-				profileSchema.findById(interaction.guild.id).then((data) => {
+				serverSchema.findById(interaction.guild.id).then((serverData) => {
 					// 一部のコマンドは別処理
 					if (modeType === 'show') {
 						const embed = new EmbedBuilder()
 							.setTitle('ポモドーロタイマーのデフォルト設定')
 							.setDescription(
-								`- 作業時間: ${data.pomodoro.defaultWorkTime}分
-- 休憩時間: ${data.pomodoro.defaultBreakTime}分
-- 長めの休憩時間: ${data.pomodoro.defaultLongBreakTime}分
-- セッション数: ${data.pomodoro.defaultCycleCount}回
-- 音声通知: ${data.pomodoro.defaultVoiceNotification ? '有効' : '無効'}
-- 音声通知の音量: ${data.pomodoro.defaultVoiceNotificationVolume}%`,
+								`- 作業時間: ${serverData.pomodoro.defaultWorkTime}分
+- 休憩時間: ${serverData.pomodoro.defaultBreakTime}分
+- 長めの休憩時間: ${serverData.pomodoro.defaultLongBreakTime}分
+- セッション数: ${serverData.pomodoro.defaultCycleCount}回
+- 音声通知: ${serverData.pomodoro.defaultVoiceNotification ? '有効' : '無効'}
+- 音声通知の音量: ${serverData.pomodoro.defaultVoiceNotificationVolume}%`,
 							)
 							.setTimestamp();
 						return interaction.reply({ embeds: [embed] });
 					} else if (modeType === 'reset') {
 						// デフォルト設定をリセット
-						data.pomodoro.defaultWorkTime = 25;
-						data.pomodoro.defaultBreakTime = 5;
-						data.pomodoro.defaultLongBreakTime = 15;
-						data.pomodoro.defaultCycleCount = 4;
-						data.pomodoro.defaultVoiceNotification = false;
-						data.pomodoro.defaultVoiceNotificationVolume = 50;
+						serverData.pomodoro.defaultWorkTime = 25;
+						serverData.pomodoro.defaultBreakTime = 5;
+						serverData.pomodoro.defaultLongBreakTime = 15;
+						serverData.pomodoro.defaultCycleCount = 4;
+						serverData.pomodoro.defaultVoiceNotification = false;
+						serverData.pomodoro.defaultVoiceNotificationVolume = 50;
 
-						return data.save().then(() => {
+						return serverData.save().then(() => {
 							return interaction.reply({
 								content:
 									'✅ ポモドーロタイマーのデフォルト設定をリセットしました。',
@@ -286,35 +286,35 @@ module.exports = {
 					}
 
 					if (modeType === 'work_time') {
-						data.pomodoro.defaultWorkTime =
+						serverData.pomodoro.defaultWorkTime =
 							interaction.options.getInteger('work_time');
 					} else if (modeType === 'break_time') {
-						data.pomodoro.defaultBreakTime =
+						serverData.pomodoro.defaultBreakTime =
 							interaction.options.getInteger('break_time');
 					} else if (modeType === 'long_break_time') {
-						data.pomodoro.defaultLongBreakTime =
+						serverData.pomodoro.defaultLongBreakTime =
 							interaction.options.getInteger('long_break_time');
 					} else if (modeType === 'cycle_count') {
-						data.pomodoro.defaultCycleCount =
+						serverData.pomodoro.defaultCycleCount =
 							interaction.options.getInteger('cycle_count');
 					} else if (modeType === 'voice_notification') {
-						data.pomodoro.defaultVoiceNotification =
+						serverData.pomodoro.defaultVoiceNotification =
 							interaction.options.getBoolean('voice_notification');
 					} else if (modeType === 'vc_notification_volume') {
-						data.pomodoro.defaultVoiceNotificationVolume =
+						serverData.pomodoro.defaultVoiceNotificationVolume =
 							interaction.options.getInteger('vc_notification_volume');
 					}
 
-					data.save().then(() => {
+					serverData.save().then(() => {
 						// データベースの更新が成功した場合
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定を更新しました。現在の設定は次の通りです。
-- 作業時間: ${data.pomodoro.defaultWorkTime}分
-- 休憩時間: ${data.pomodoro.defaultBreakTime}分
-- 長めの休憩時間: ${data.pomodoro.defaultLongBreakTime}分
-- セッション数: ${data.pomodoro.defaultCycleCount}回
-- 音声通知: ${data.pomodoro.defaultVoiceNotification ? '有効' : '無効'}
-- 音声通知の音量: ${data.pomodoro.defaultVoiceNotificationVolume}%`,
+- 作業時間: ${serverData.pomodoro.defaultWorkTime}分
+- 休憩時間: ${serverData.pomodoro.defaultBreakTime}分
+- 長めの休憩時間: ${serverData.pomodoro.defaultLongBreakTime}分
+- セッション数: ${serverData.pomodoro.defaultCycleCount}回
+- 音声通知: ${serverData.pomodoro.defaultVoiceNotification ? '有効' : '無効'}
+- 音声通知の音量: ${serverData.pomodoro.defaultVoiceNotificationVolume}%`,
 						});
 					});
 				});
