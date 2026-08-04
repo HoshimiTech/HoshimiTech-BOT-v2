@@ -104,7 +104,7 @@ app.listen(PORT, () => {
 });
 
 // Voicevoxの起動
-const { getVoicevoxExecutablePath } = require('./voicevoxSetup');
+const { getVoicevoxExecutablePath } = require('./scripts/voicevoxSetup.js');
 
 const cpuThreads =
 	process.env.voicevox_cpu_threads || require('os').cpus().length; // 環境変数から取得、デフォルトはCPUコア数
