@@ -5,7 +5,7 @@
 	"main": "index.js",
 	"scripts": {
 		"main": "node index.js",
-		"build": "node voicevoxSetup.js",
+		"build": "node scripts/voicevoxSetup.js",
 		"prod:start": "node scripts/systemd.js start",
 		"prod:stop": "node scripts/systemd.js stop",
 		"prod:install": "node scripts/systemd.js install",
