@@ -2,7 +2,7 @@ const { REST, Routes, ActivityType } = require('discord.js');
 const os = require('node:os');
 require('dotenv').config({ quiet: true });
 const serverSchema = require('../models/serverSchema.js');
-const { init } = require('../lib/pomodoro/main.js');
+const pomodoroUtils = require('../lib/pomodoro/utils.js');
 const discord_token = process.env.discord_bot_token;
 const consoleChannel = process.env.discord_bot_console;
 const adminUserID = process.env.discord_bot_owner;
@@ -79,7 +79,7 @@ module.exports = async (client) => {
 
 		// ポモドーロタイマーの設定
 		client.pomodoroState = new Map();
-		await init(client, guild.id);
+		await pomodoroUtils.init(client, guild.id);
 	});
 
 	//登録済みのサーバーの中で、退出済みの物があれば削除する

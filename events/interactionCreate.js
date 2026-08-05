@@ -15,7 +15,8 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const serverSchema = require('../models/serverSchema.js');
-const pomodoro = require('../lib/pomodoro/main.js');
+const pomodoroManager = require('../lib/pomodoro/main.js');
+const pomodoroUtils = require('../lib/pomodoro/utils.js');
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -191,7 +192,7 @@ module.exports = async (client, interaction) => {
 					}
 					case 'pomodoro_update': {
 						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoro.getPomodoroState(
+						const pomodoroState = await pomodoroUtils.getPomodoroState(
 							client,
 							interaction.guild.id,
 						);
@@ -206,11 +207,11 @@ module.exports = async (client, interaction) => {
 						}
 
 						await interaction.deferUpdate();
-						return pomodoro.sendPomodoroStatus(interaction, pomodoroState);
+						return pomodoroUtils.sendPomodoroStatus(interaction, pomodoroState);
 					}
 					case 'pomodoro_stop': {
 						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoro.getPomodoroState(
+						const pomodoroState = await pomodoroUtils.getPomodoroState(
 							client,
 							interaction.guild.id,
 						);
@@ -224,7 +225,7 @@ module.exports = async (client, interaction) => {
 							return interaction.deferUpdate();
 						}
 
-						return pomodoro.stop(client, interaction);
+						return pomodoroManager.stop(client, interaction);
 					}
 					case 'cancel': {
 						return interaction.message.delete();
