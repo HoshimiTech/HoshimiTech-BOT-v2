@@ -1,5 +1,3 @@
-const fetch = (...args) =>
-	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const cheerio = require('cheerio');
 const fs = require('fs');
 const fsp = require('fs').promises;
@@ -7,11 +5,12 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const AdmZip = require('adm-zip');
+const { Readable } = require('stream');
 
 const execAsync = promisify(exec);
 
 // Constants
-const LIB_DIR = path.join(__dirname, 'lib', 'pomodoro', 'voicevox');
+const LIB_DIR = path.resolve(__dirname, '../lib/pomodoro/voicevox');
 const VOICEVOX_ENGINE_PATH = path.join(
 	LIB_DIR,
 	process.platform === 'win32' ? 'run.exe' : 'run',
@@ -154,16 +153,50 @@ async function downloadFile(url, dest) {
 		'INFO: [完了] lib/pomodoro/voicevox の古いデータのクリーンアップが完了しました。',
 	);
 
+	const startTime = Date.now();
 	const res = await fetch(url);
 	if (!res.ok) {
 		throw new Error(`ダウンロード失敗: ${res.statusText}`);
 	}
 
+	const total = Number(res.headers.get('content-length')) || 0;
+	let downloaded = 0;
+
+	const nodeStream = Readable.fromWeb(res.body);
 	const fileStream = fs.createWriteStream(dest);
-	return new Promise((resolve, reject) => {
-		res.body.pipe(fileStream);
-		res.body.on('error', reject);
+
+	const BAR_WIDTH = 40;
+
+	nodeStream.on('data', (chunk) => {
+		downloaded += chunk.length;
+		const downloadedMiB = downloaded / 1024 / 1024;
+
+		if (total) {
+			const percent = downloaded / total;
+			const filled = Math.round(BAR_WIDTH * percent);
+
+			const bar = '='.repeat(filled) + ' '.repeat(BAR_WIDTH - filled);
+			const elapsed = (Date.now() - startTime) / 1000;
+			const totalMiB = total / 1024 / 1024;
+			const speed = elapsed > 0 ? downloadedMiB / elapsed : 0;
+			const remain = speed > 0 ? (totalMiB - downloadedMiB) / speed : 0;
+
+			process.stdout.write(
+				`\r[${bar}] ${(percent * 100).toFixed(1)}% ` +
+					`${downloadedMiB.toFixed(1)} / ${totalMiB.toFixed(1)} MiB ` +
+					`速度: ${speed.toFixed(1)} MiB/s ` +
+					`残り: ${remain.toFixed(1)} 秒`,
+			);
+		} else {
+			process.stdout.write(`\r${downloadedMiB.toFixed(1)} MiB`);
+		}
+	});
+
+	await new Promise((resolve, reject) => {
+		nodeStream.pipe(fileStream);
+		nodeStream.on('error', reject);
 		fileStream.on('finish', resolve);
+		fileStream.on('error', reject);
 	});
 }
 
@@ -386,6 +419,7 @@ async function setupVoicevox() {
 
 	console.info('INFO: [開始] ダウンロードを開始します:', downloadUrl);
 	await downloadFile(downloadUrl, filePath);
+	process.stdout.write('\n');
 	console.info('INFO: [完了] ダウンロードが完了しました:', filePath);
 
 	if (platform === 'win32') {
