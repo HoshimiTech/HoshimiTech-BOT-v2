@@ -196,7 +196,7 @@ module.exports = async (client, interaction) => {
 							client,
 							interaction.guild.id,
 						);
-						if (!pomodoroState.running) {
+						if (!pomodoroState.running && !pomodoroState.paused) {
 							await interaction.message.edit({
 								content: '❌ ポモドーロタイマーが実行されていません。',
 								embeds: [],
@@ -215,7 +215,7 @@ module.exports = async (client, interaction) => {
 							client,
 							interaction.guild.id,
 						);
-						if (!pomodoroState.running) {
+						if (!pomodoroState.running && !pomodoroState.paused) {
 							await interaction.message.edit({
 								content: '❌ ポモドーロタイマーが実行されていません。',
 								embeds: [],

@@ -65,6 +65,16 @@ module.exports = {
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
+				.setName('pause')
+				.setDescription('ポモドーロタイマーを一時停止します。'),
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('resume')
+				.setDescription('ポモドーロタイマーを再開します。'),
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
 				.setName('status')
 				.setDescription('ポモドーロタイマーの状況を確認します。'),
 		)
@@ -176,7 +186,11 @@ module.exports = {
 	run: async (client, interaction) => {
 		try {
 			let mode = interaction.options.getSubcommand();
-			mode !== 'start' && mode !== 'status' && mode !== 'stop'
+			mode !== 'start' &&
+			mode !== 'status' &&
+			mode !== 'stop' &&
+			mode !== 'pause' &&
+			mode !== 'resume'
 				? (mode = interaction.options.getSubcommandGroup())
 				: null;
 			const modeType = interaction.options.getSubcommand();
@@ -231,6 +245,14 @@ module.exports = {
 					voiceNotification,
 					voiceNotificationVolume,
 				});
+			} else if (mode === 'pause') {
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+				await pomodoro.pause(client, interaction);
+			} else if (mode === 'resume') {
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+				await pomodoro.resume(client, interaction);
 			} else if (mode === 'status') {
 				await pomodoro.status(client, interaction);
 			} else if (mode === 'stop') {
