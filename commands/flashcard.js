@@ -165,7 +165,7 @@ module.exports = {
 									)
 									.join('\n');
 								await interaction.reply({
-									content: `ℹ️　以下のカードがあります:\n${cardList}`,
+									content: `ℹ️ 以下のカードがあります:\n${cardList}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {

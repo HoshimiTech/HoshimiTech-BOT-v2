@@ -561,7 +561,9 @@ module.exports = async (client, interaction) => {
 										serverData[variable_name] = undefined;
 
 										serverData.save().then(() => {
-											console.info(`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`);
+											console.info(
+												`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
+											);
 										});
 									});
 								}

@@ -345,9 +345,6 @@ module.exports = {
 					});
 				});
 			} else if (mode === 'panel') {
-				const serverData = await serverSchema.findById(interaction.guild.id);
-				const pomodoroServerConfig = serverData.pomodoro;
-
 				const embed = new EmbedBuilder()
 					.setTitle('⏱ ポモドーロタイマー')
 					.setDescription('※再開は一時的子中にのみ使用できます。');
