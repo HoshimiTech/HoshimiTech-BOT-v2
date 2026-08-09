@@ -190,6 +190,52 @@ module.exports = async (client, interaction) => {
 						);
 						return interaction.showModal(modal);
 					}
+					case 'pomodoro_start': {
+						return pomodoroManager.start(client, interaction);
+					}
+					case 'pomodoro_pause': {
+						await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+						return pomodoroManager.pause(client, interaction);
+					}
+					case 'pomodoro_resume': {
+						await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+						return pomodoroManager.resume(client, interaction);
+					}
+					case 'pomodoro_settings_show': {
+						const serverData = await serverSchema.findById(
+							interaction.guild.id,
+						);
+						if (!serverData) {
+							return interaction.reply({
+								content:
+									'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						const pomodoroState = await pomodoroUtils.getPomodoroState(
+							client,
+							interaction.guild.id,
+						);
+						let currentPomodoroSettings;
+						if (pomodoroState.running && !pomodoroState.paused) {
+							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.cycleCount}\` 回\n- **通知音:** \`${pomodoroState.config.options.voiceNotification ? '鳴らす' : '鳴らさない'}\`\n- **通知音の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\``;
+						} else {
+							currentPomodoroSettings =
+								'稼働しているポモドーロタイマーはありません。';
+						}
+
+						const embed = new EmbedBuilder().setDescription(
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.defaultWorkTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.defaultBreakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.defaultLongBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.defaultCycleCount}\` 回\n- **通知音:** \`${serverData.pomodoro.defaultVoiceNotification ? '鳴らす' : '鳴らさない'}\`\n- **通知音の音量:** \`${serverData.pomodoro.defaultVoiceNotificationVolume}\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+						);
+
+						return interaction.reply({
+							embeds: [embed],
+							flags: MessageFlags.Ephemeral,
+						});
+					}
 					case 'pomodoro_update': {
 						// ポモドーロタイマーの状態取得とステータスの確認
 						const pomodoroState = await pomodoroUtils.getPomodoroState(
@@ -209,13 +255,24 @@ module.exports = async (client, interaction) => {
 						await interaction.deferUpdate();
 						return pomodoroUtils.sendPomodoroStatus(interaction, pomodoroState);
 					}
-					case 'pomodoro_stop': {
-						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoroUtils.getPomodoroState(
-							client,
-							interaction.guild.id,
-						);
-						if (!pomodoroState.running && !pomodoroState.paused) {
+					case 'cancel': {
+						return interaction.message.delete();
+					}
+				}
+
+				if (interaction?.customId.includes('pomodoro_stop')) {
+					// ポモドーロタイマーの状態取得とステータスの確認
+					const pomodoroState = await pomodoroUtils.getPomodoroState(
+						client,
+						interaction.guild.id,
+					);
+					if (!pomodoroState.running && !pomodoroState.paused) {
+						if (interaction.customId === 'pomodoro_stop_from_panel') {
+							return interaction.reply({
+								content: '❌ ポモドーロタイマーが実行されていません。',
+								flags: MessageFlags.Ephemeral,
+							});
+						} else {
 							await interaction.message.edit({
 								content: '❌ ポモドーロタイマーが実行されていません。',
 								embeds: [],
@@ -224,12 +281,9 @@ module.exports = async (client, interaction) => {
 							});
 							return interaction.deferUpdate();
 						}
+					}
 
-						return pomodoroManager.stop(client, interaction);
-					}
-					case 'cancel': {
-						return interaction.message.delete();
-					}
+					return pomodoroManager.stop(client, interaction);
 				}
 			}
 

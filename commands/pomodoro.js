@@ -2,6 +2,9 @@ const {
 	SlashCommandBuilder,
 	MessageFlags,
 	EmbedBuilder,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle,
 	PermissionsBitField,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
@@ -181,16 +184,17 @@ module.exports = {
 								.setRequired(true),
 						),
 				),
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('panel')
+				.setDescription('ポモドーロタイマーのパネルを表示します。'),
 		),
 
 	run: async (client, interaction) => {
 		try {
 			let mode = interaction.options.getSubcommand();
-			mode !== 'start' &&
-			mode !== 'status' &&
-			mode !== 'stop' &&
-			mode !== 'pause' &&
-			mode !== 'resume'
+			mode === 'settings'
 				? (mode = interaction.options.getSubcommandGroup())
 				: null;
 			const modeType = interaction.options.getSubcommand();
@@ -340,6 +344,36 @@ module.exports = {
 						});
 					});
 				});
+			} else if (mode === 'panel') {
+				const serverData = await serverSchema.findById(interaction.guild.id);
+				const pomodoroServerConfig = serverData.pomodoro;
+
+				const embed = new EmbedBuilder()
+					.setTitle('⏱ ポモドーロタイマー')
+					.setDescription('※再開は一時的子中にのみ使用できます。');
+				const buttons = new ActionRowBuilder().addComponents(
+					new ButtonBuilder()
+						.setCustomId('pomodoro_start')
+						.setLabel('開始')
+						.setStyle(ButtonStyle.Success),
+					new ButtonBuilder()
+						.setCustomId('pomodoro_pause')
+						.setLabel('一時停止')
+						.setStyle(ButtonStyle.Primary),
+					new ButtonBuilder()
+						.setCustomId('pomodoro_resume')
+						.setLabel('再開')
+						.setStyle(ButtonStyle.Primary),
+					new ButtonBuilder()
+						.setCustomId('pomodoro_stop_from_panel')
+						.setLabel('終了')
+						.setStyle(ButtonStyle.Danger),
+					new ButtonBuilder()
+						.setCustomId('pomodoro_settings_show')
+						.setLabel('設定表示')
+						.setStyle(ButtonStyle.Secondary),
+				);
+				return interaction.reply({ embeds: [embed], components: [buttons] });
 			}
 		} catch (err) {
 			const errorNotification = require('../lib/errorNotification.js');
