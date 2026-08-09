@@ -18,7 +18,7 @@ module.exports = async (client) => {
 			await rest.put(Routes.applicationCommands(client.user.id), {
 				body: await client.commands,
 			});
-			console.info('スラッシュコマンドの再読み込みに成功しました。');
+			console.info('✅ スラッシュコマンドの再読み込みに成功しました。');
 		} catch (err) {
 			console.info(
 				`❌ スラッシュコマンドの再読み込み時にエラーが発生しました。：\n${err}`,
@@ -26,7 +26,7 @@ module.exports = async (client) => {
 		}
 	})();
 
-	console.info(`${client.user.username}への接続に成功しました。`);
+	console.info(`✅ ${client.user.username}への接続に成功しました。`);
 
 	//カスタマイズアクティビティを設定
 	setInterval(() => {
@@ -60,14 +60,16 @@ module.exports = async (client) => {
 				await serverData
 					.save()
 					.then(() => {
-						console.info(`未登録のサーバーID「${guild.id}」を新規登録しました`);
+						console.info(
+							`✅ 未登録のサーバーID「${guild.id}」を新規登録しました`,
+						);
 					})
 					.catch((err) => {
 						console.error(err);
 						return client.channels.cache
 							.get(consoleChannel)
 							?.send({
-								content: `<@${adminUserID}> 新規サーバー登録時にエラーが発生しました。`,
+								content: `<@${adminUserID}>\n❌ 新規サーバー登録時にエラーが発生しました。`,
 							})
 							.catch((err) => {
 								// 送信失敗は無視
@@ -97,7 +99,7 @@ module.exports = async (client) => {
 					.deleteOne({ _id: guildID })
 					.then(() => {
 						return console.info(
-							'退出済みのサーバーを発見したため、DBから削除しました。',
+							'✅ 退出済みのサーバーを発見したため、DBから削除しました。',
 						);
 					})
 					.catch((err) => {

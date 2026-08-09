@@ -78,7 +78,7 @@ module.exports = async (client, reaction, user) => {
 			);
 			await reaction.message.reply({
 				content:
-					'メッセージリアクション受信時に、DB取得エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+					'❌ メッセージリアクション受信時に、DB取得エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 				components: [button],
 				flags: MessageFlags.Ephemeral,
 			});

@@ -283,7 +283,7 @@ module.exports = {
 					// 一部のコマンドは別処理
 					if (modeType === 'show') {
 						const embed = new EmbedBuilder()
-							.setTitle('ポモドーロタイマーのデフォルト設定')
+							.setTitle('ℹ️ ポモドーロタイマーのデフォルト設定')
 							.setDescription(
 								`- 作業時間: ${serverData.pomodoro.defaultWorkTime}分
 - 休憩時間: ${serverData.pomodoro.defaultBreakTime}分

@@ -54,7 +54,7 @@ module.exports = {
 							}
 
 							const embed = new EmbedBuilder()
-								.setTitle(`「${keyword}」の検索結果`)
+								.setTitle(`ℹ️ 「${keyword}」の検索結果`)
 								.addFields({
 									name: 'プレイリスト',
 									value: playlistDescription.join('\n'),

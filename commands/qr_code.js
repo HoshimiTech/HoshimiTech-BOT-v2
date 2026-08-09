@@ -31,7 +31,7 @@ module.exports = {
 			QRCode.toBuffer(QRValue, (err, buffer) => {
 				if (err)
 					return interaction.editReply(
-						'QRコード生成時にエラーが発生しました。時間を空けて再度お試ししただき、同様の問題が発生する場合はサポートサーバーまでお問い合わせください。',
+						'❌ QRコード生成時にエラーが発生しました。時間を空けて再度お試ししただき、同様の問題が発生する場合はサポートサーバーまでお問い合わせください。',
 					);
 
 				return interaction.editReply({

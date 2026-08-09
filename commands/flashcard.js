@@ -121,25 +121,25 @@ module.exports = {
 								await interaction.reply({
 									content:
 										cardResult.error ||
-										'カードの作成に失敗しました。不明なエラーが発生した可能性が有ります。時間を空けて再度お試しください。',
+										'❌ カードの作成に失敗しました。不明なエラーが発生した可能性が有ります。時間を空けて再度お試しください。',
 									flags: MessageFlags.Ephemeral,
 								});
 							} else if (cardResult.data && !cardResult.data?.alreadyExists) {
 								const card = cardResult.data;
 								await interaction.reply({
-									content: `カードが作成されました！\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
+									content: `✅ カードが作成されました！\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else if (cardResult.data && cardResult.data?.alreadyExists) {
 								const card = cardResult.data;
 								await interaction.reply({
-									content: `そのキーワードのカードは既に存在します！更新する場合は一度カードを削除してから再度作成してください。\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
+									content: `❌ そのキーワードのカードは既に存在します！更新する場合は一度カードを削除してから再度作成してください。\n表面: ${card.word}\n裏面: ${card.meaning}\nカテゴリー: ${card.category}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
 									content:
-										'カードの作成に失敗しました。不明なエラーが発生した可能性が有ります。時間を空けて再度お試しください。',
+										'❌ カードの作成に失敗しました。不明なエラーが発生した可能性が有ります。時間を空けて再度お試しください。',
 									flags: MessageFlags.Ephemeral,
 								});
 							}
@@ -154,7 +154,7 @@ module.exports = {
 							});
 							if (!cardsResult.success) {
 								await interaction.reply({
-									content: cardsResult.error,
+									content: `❌ ${cardsResult.error}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else if (cardsResult.data && cardsResult.data.length > 0) {
@@ -165,12 +165,12 @@ module.exports = {
 									)
 									.join('\n');
 								await interaction.reply({
-									content: `以下のカードがあります:\n${cardList}`,
+									content: `ℹ️　以下のカードがあります:\n${cardList}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
-									content: 'カードが見つかりませんでした。',
+									content: '❌ カードが見つかりませんでした。',
 									flags: MessageFlags.Ephemeral,
 								});
 							}
@@ -185,12 +185,12 @@ module.exports = {
 							);
 							if (!deleteResult.success) {
 								await interaction.reply({
-									content: deleteResult.error,
+									content: `❌ ${deleteResult.error}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else if (deleteResult.success && deleteResult.data) {
 								await interaction.reply({
-									content: `カードが削除されました！\n削除されたカード: ${deleteWord}`,
+									content: `✅ カードが削除されました！\n削除されたカード: ${deleteWord}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							}
@@ -211,12 +211,12 @@ module.exports = {
 
 							if (result.success) {
 								await interaction.reply({
-									content: `カテゴリー「${result.categoryName}」が作成されました！\nこのカテゴリーはカード作成時に選択できるようになります。`,
+									content: `✅ カテゴリー「${result.categoryName}」が作成されました！\nこのカテゴリーはカード作成時に選択できるようになります。`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
-									content: result.error,
+									content: `❌ ${result.error}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							}
@@ -230,7 +230,7 @@ module.exports = {
 
 							if (!categoriesResult.success) {
 								await interaction.reply({
-									content: categoriesResult.error,
+									content: `❌ ${categoriesResult.error}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {
@@ -238,12 +238,12 @@ module.exports = {
 								if (categories && categories.length > 0) {
 									const categoryList = categories.join(', ');
 									await interaction.reply({
-										content: `利用可能なカテゴリー:\n${categoryList}`,
+										content: `ℹ️ 利用可能なカテゴリー:\n${categoryList}`,
 										flags: MessageFlags.Ephemeral,
 									});
 								} else {
 									await interaction.reply({
-										content: '利用可能なカテゴリーがありません。',
+										content: '❌ 利用可能なカテゴリーがありません。',
 										flags: MessageFlags.Ephemeral,
 									});
 								}
@@ -261,12 +261,12 @@ module.exports = {
 
 							if (deleteResult.success) {
 								await interaction.reply({
-									content: `カテゴリー「${categoryNameToDelete}」が削除されました。`,
+									content: `✅ カテゴリー「${categoryNameToDelete}」が削除されました。`,
 									flags: MessageFlags.Ephemeral,
 								});
 							} else {
 								await interaction.reply({
-									content: deleteResult.error,
+									content: `❌ ${deleteResult.error}`,
 									flags: MessageFlags.Ephemeral,
 								});
 							}

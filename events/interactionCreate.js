@@ -411,7 +411,7 @@ module.exports = async (client, interaction) => {
 							let page = 0;
 							const maxPage = Math.ceil(guilds.length / 10) - 1;
 							const embed = new EmbedBuilder()
-								.setTitle(`${guilds.length}サーバーに所属中`)
+								.setTitle(`ℹ️ ${guilds.length}サーバーに所属中`)
 								.setDescription(
 									guilds
 										.slice(page * 10, page * 10 + 10)
@@ -541,7 +541,7 @@ module.exports = async (client, interaction) => {
 									serverData[variable_name] = variable_value;
 									await serverData.save().then(() => {
 										console.log(
-											`${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
+											`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
 										);
 
 										return interaction.reply('done');
@@ -561,12 +561,12 @@ module.exports = async (client, interaction) => {
 										serverData[variable_name] = undefined;
 
 										serverData.save().then(() => {
-											console.info('updated!');
+											console.info(`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`);
 										});
 									});
 								}
 
-								return interaction.reply('done');
+								return interaction.reply('✅ done');
 							});
 						} else {
 							console.log(how_to);
@@ -630,7 +630,7 @@ module.exports = async (client, interaction) => {
 								if (serverData.sticky.channels.find((c) => c._id === channelId))
 									return interaction.reply({
 										content:
-											'このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
+											'❌ このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
 										flags: MessageFlags.Ephemeral,
 									});
 
@@ -651,7 +651,7 @@ module.exports = async (client, interaction) => {
 									.then(() => {
 										return interaction.reply({
 											content:
-												'メッセージ固定の作成に成功しました。\n解除する場合は`/sticky clear`コマンドを利用してください。',
+												'✅ メッセージ固定の作成に成功しました。\n解除する場合は`/sticky clear`コマンドを利用してください。',
 											flags: MessageFlags.Ephemeral,
 										});
 									})
@@ -669,7 +669,7 @@ module.exports = async (client, interaction) => {
 										);
 										return interaction.reply({
 											content:
-												'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+												'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 											components: [button],
 											flags: MessageFlags.Ephemeral,
 										});
@@ -689,7 +689,7 @@ module.exports = async (client, interaction) => {
 								);
 								return interaction.reply({
 									content:
-										'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+										'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 									components: [button],
 									flags: MessageFlags.Ephemeral,
 								});

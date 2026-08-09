@@ -22,7 +22,7 @@ module.exports = {
 
 		// 転送する旨を送信
 		return interaction.reply({
-			content: 'DMにメッセージを転送します…',
+			content: '🔄️ DMにメッセージを転送します…',
 			flags: MessageFlags.Ephemeral,
 		});
 	},

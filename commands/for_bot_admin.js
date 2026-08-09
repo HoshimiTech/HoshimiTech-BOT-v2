@@ -20,7 +20,7 @@ module.exports = {
 		if (!adminIDs.includes(interaction?.user?.id))
 			return interaction
 				.editReply({
-					content: `申し訳ございません。\n本コマンドはBOTのオーナーのみが使用出来るように設定されているため、使用出来ません。\n\nご不明な点がございましたら、[サポートサーバー](${process.env.discord_bot_support})にてお問い合わせください。`,
+					content: `❌ 申し訳ございません。\n本コマンドはBOTのオーナーのみが使用出来るように設定されているため、使用出来ません。\n\nご不明な点がございましたら、[サポートサーバー](${process.env.discord_bot_support})にてお問い合わせください。`,
 					flags: MessageFlags.Ephemeral,
 				})
 				.catch((err) => {
@@ -48,7 +48,7 @@ module.exports = {
 		);
 		await interaction.editReply({
 			content:
-				'何をしますか？\n\n# __**※※データベース更新の際は、必ずプログラム内の「/models/＊＊＊Schema.js」を更新後に追加/削除を行ってください。それを行わないと、正常に更新できません※※**__',
+				'ℹ️　何をしますか？\n\n# __**※※データベース更新の際は、必ずプログラム内の「/models/＊＊＊Schema.js」を更新後に追加/削除を行ってください。それを行わないと、正常に更新できません※※**__',
 			flags: MessageFlags.Ephemeral,
 			components: [buttons],
 		});
