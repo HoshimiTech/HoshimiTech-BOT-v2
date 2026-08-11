@@ -210,7 +210,7 @@ module.exports = async (client, interaction) => {
 						if (!serverData) {
 							return interaction.reply({
 								content:
-									'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+									'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
 								flags: MessageFlags.Ephemeral,
 							});
 						}
@@ -221,14 +221,14 @@ module.exports = async (client, interaction) => {
 						);
 						let currentPomodoroSettings;
 						if (pomodoroState.running && !pomodoroState.paused) {
-							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.cycleCount}\` 回\n- **通知音:** \`${pomodoroState.config.options.voiceNotification ? '鳴らす' : '鳴らさない'}\`\n- **通知音の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\``;
+							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.cycleCount}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %`;
 						} else {
 							currentPomodoroSettings =
-								'稼働しているポモドーロタイマーはありません。';
+								'現在稼働しているポモドーロタイマーはありません。';
 						}
 
 						const embed = new EmbedBuilder().setDescription(
-							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.defaultWorkTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.defaultBreakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.defaultLongBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.defaultCycleCount}\` 回\n- **通知音:** \`${serverData.pomodoro.defaultVoiceNotification ? '鳴らす' : '鳴らさない'}\`\n- **通知音の音量:** \`${serverData.pomodoro.defaultVoiceNotificationVolume}\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.defaultWorkTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.defaultBreakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.defaultLongBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.defaultCycleCount}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.defaultVoiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.defaultVoiceNotificationVolume}\` %\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
 						);
 
 						return interaction.reply({
@@ -277,7 +277,7 @@ module.exports = async (client, interaction) => {
 						if (!serverData || !serverData.pomodoro) {
 							return interaction.reply({
 								content:
-									'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+									'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
 								flags: MessageFlags.Ephemeral,
 							});
 						}
@@ -317,8 +317,9 @@ module.exports = async (client, interaction) => {
 						defaultBreakTime: '休憩時間 (分)',
 						defaultLongBreakTime: '長い休憩時間 (分)',
 						defaultCycleCount: '長い休憩までの回数',
-						defaultVoiceNotification: '通知音を鳴らすかどうか',
-						defaultVoiceNotificationVolume: '通知音の音量 (0-100%)',
+						defaultVoiceNotification: 'ボイスチャンネルでの音声による通知',
+						defaultVoiceNotificationVolume:
+							'ボイスチャンネルでの通知の際の音量 (0-100%)',
 					};
 
 					const modal =
@@ -349,14 +350,14 @@ module.exports = async (client, interaction) => {
 										new LabelBuilder()
 											.setLabel(labels[editType])
 											.setDescription(
-												`現在は ${pomodoroSettings[editType] ? '有効' : '無効'} に設定されています。`,
+												`現在は ${pomodoroSettings[editType] ? '通知する' : '通知しない'} に設定されています。`,
 											)
 											.setStringSelectMenuComponent(
 												new StringSelectMenuBuilder()
 													.setCustomId(`${editType}_input`)
 													.setOptions(
 														new StringSelectMenuOptionBuilder()
-															.setLabel('有効')
+															.setLabel('通知する')
 															.setValue('true')
 															.setEmoji('✅')
 															.setDefault(
@@ -364,7 +365,7 @@ module.exports = async (client, interaction) => {
 																	true,
 															),
 														new StringSelectMenuOptionBuilder()
-															.setLabel('無効')
+															.setLabel('通知しない')
 															.setValue('false')
 															.setEmoji('❌')
 															.setDefault(
@@ -846,16 +847,16 @@ module.exports = async (client, interaction) => {
 					) {
 						return interaction.reply({
 							content:
-								'❌ 入力値が不正です。trueまたはfalseを入力してください。',
+								'❌ 入力値が不正です。正しく選択肢から選択している事を確認してください。',
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
 						editType === 'defaultVoiceNotificationVolume' &&
-						(isNaN(inputValue) || inputValue < 0 || inputValue > 100)
+						(isNaN(inputValue) || inputValue <= 0 || inputValue > 100)
 					) {
 						return interaction.reply({
 							content:
-								'❌ 入力値が不正です。0以上100以下の数値を入力してください。',
+								'❌ 入力値が不正です。1以上100以下の数値を入力してください。',
 							flags: MessageFlags.Ephemeral,
 						});
 					}
@@ -865,7 +866,7 @@ module.exports = async (client, interaction) => {
 					if (!serverData) {
 						return interaction.reply({
 							content:
-								'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+								'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
 							flags: MessageFlags.Ephemeral,
 						});
 					}
@@ -881,8 +882,9 @@ module.exports = async (client, interaction) => {
 							defaultBreakTime: '休憩時間',
 							defaultLongBreakTime: '長い休憩時間',
 							defaultCycleCount: '長い休憩までの回数',
-							defaultVoiceNotification: '通知音を鳴らすかどうか',
-							defaultVoiceNotificationVolume: '通知音の音量',
+							defaultVoiceNotification: 'ボイスチャンネルでの音声による通知',
+							defaultVoiceNotificationVolume:
+								'ボイスチャンネルでの通知の際の音量',
 						};
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,

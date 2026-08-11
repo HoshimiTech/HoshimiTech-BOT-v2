@@ -39,7 +39,7 @@ module.exports = {
 				.addIntegerOption((option) =>
 					option
 						.setName('long_break_time')
-						.setDescription('長めの休憩時間を設定してください。(単位: 分)')
+						.setDescription('長い休憩時間を設定してください。(単位: 分)')
 						.setMinValue(1)
 						.setRequired(false),
 				)
@@ -47,7 +47,7 @@ module.exports = {
 					option
 						.setName('cycle_count')
 						.setDescription(
-							'作業時間と休憩時間のセットの、何回に1回長めに休憩するかを設定します。(単位: 回)',
+							'作業時間と休憩時間のセットの、何回に1回長い休憩時間を設けるかを設定します。(単位: 回)',
 						)
 						.setMinValue(1)
 						.setRequired(false),
@@ -56,14 +56,16 @@ module.exports = {
 					option
 						.setName('voice_notification')
 						.setDescription(
-							'音声通知を有効にする場合はtrueを指定してください。デフォルトは無効(false)です。',
+							'ボイスチャンネルでの音声による通知を行うか設定します。音声通知を有効にする場合はtrueを指定してください。',
 						)
 						.setRequired(false),
 				)
 				.addIntegerOption((option) =>
 					option
 						.setName('voice_notification_volume')
-						.setDescription('音声通知の音量を設定してください。(1～100%)')
+						.setDescription(
+							'ボイスチャンネルでの通知の際の音量を設定します。(1～100%)',
+						)
 						.setMinValue(1)
 						.setMaxValue(100)
 						.setRequired(false),
@@ -92,12 +94,14 @@ module.exports = {
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('settings')
-				.setDescription('ポモドーロタイマーのデフォルト設定を変更します。'),
+				.setDescription(
+					'ポモドーロタイマーのデフォルト設定を確認・変更します。',
+				),
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName('panel')
-				.setDescription('ポモドーロタイマーのパネルを表示します。'),
+				.setDescription('ポモドーロタイマーの操作パネルを表示します。'),
 		),
 
 	run: async (client, interaction) => {
@@ -119,7 +123,7 @@ module.exports = {
 				if (!interaction?.member?.voice?.channelId)
 					return interaction
 						?.reply({
-							content: '❌ ボイスチャンネルに参加してください。',
+							content: '❌ ボイスチャンネルに接続してから実行してください。',
 							flags: MessageFlags.Ephemeral,
 						})
 						.catch((err) => {
@@ -135,7 +139,7 @@ module.exports = {
 					) {
 						return interaction
 							?.reply({
-								content: '❌ 私と同じボイスチャンネルに接続してください。',
+								content: '❌ BOTと同じボイスチャンネルに接続してください。',
 								flags: MessageFlags.Ephemeral,
 							})
 							.catch((err) => {
@@ -190,10 +194,12 @@ module.exports = {
 					const labels = {
 						defaultWorkTime: '作業時間: DATA分',
 						defaultBreakTime: '休憩時間: DATA分',
-						defaultLongBreakTime: '長めの休憩時間: DATA分',
-						defaultCycleCount: 'セッション数: DATA回',
-						defaultVoiceNotification: '音声通知: DATA',
-						defaultVoiceNotificationVolume: '音声通知の音量: DATA%',
+						defaultLongBreakTime: '長い休憩時間: DATA分',
+						defaultCycleCount: '長い休憩までの回数: DATA回',
+						defaultVoiceNotification:
+							'ボイスチャンネルでの音声による通知: DATA',
+						defaultVoiceNotificationVolume:
+							'ボイスチャンネルでの通知の際の音量: DATA%',
 					};
 					let sections = [];
 					for (const key in labels) {
@@ -202,7 +208,7 @@ module.exports = {
 							new SectionBuilder()
 								.addTextDisplayComponents(
 									new TextDisplayBuilder().setContent(
-										`- ${key !== 'defaultVoiceNotification' ? labels[key].replace('DATA', value) : labels[key].replace('DATA', value ? '有効' : '無効')}`,
+										`- ${key !== 'defaultVoiceNotification' ? labels[key].replace('DATA', value) : labels[key].replace('DATA', value ? '通知する' : '通知しない')}`,
 									),
 								)
 								.setButtonAccessory(
@@ -244,7 +250,7 @@ module.exports = {
 			} else if (subcommand === 'panel') {
 				const embed = new EmbedBuilder()
 					.setTitle('⏱ ポモドーロタイマー')
-					.setDescription('※再開は一時的子中にのみ使用できます。');
+					.setDescription('※再開は一時停止中にのみ使用できます。');
 				const buttons = new ActionRowBuilder().addComponents(
 					new ButtonBuilder()
 						.setCustomId('pomodoro_start')
@@ -264,7 +270,7 @@ module.exports = {
 						.setStyle(ButtonStyle.Danger),
 					new ButtonBuilder()
 						.setCustomId('pomodoro_settings_show')
-						.setLabel('設定表示')
+						.setLabel('設定の表示')
 						.setStyle(ButtonStyle.Secondary),
 				);
 				return interaction.reply({ embeds: [embed], components: [buttons] });
