@@ -310,10 +310,6 @@ module.exports = async (client, interaction) => {
 					// 編集タイプの取得
 					const customId = interaction.customId;
 					const editType = customId.split('_').slice(3).join('_');
-					// _を消して_の後の文字を大文字に
-					const editTypeIdentifier = editType.replace(/_./g, (match) =>
-						match[1].toUpperCase(),
-					);
 
 					// モーダルの作成
 					const labels = {
@@ -326,32 +322,30 @@ module.exports = async (client, interaction) => {
 					};
 
 					const modal =
-						editTypeIdentifier !== 'defaultVoiceNotification'
+						editType !== 'defaultVoiceNotification'
 							? new ModalBuilder()
-									.setCustomId(`pomodoro_settings_edit_${editType}`)
+									.setCustomId(`pomodoro_settings_editModal_${editType}`)
 									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
 									.setLabelComponents(
 										new LabelBuilder()
-											.setLabel(labels[editTypeIdentifier])
+											.setLabel(labels[editType])
 											.setTextInputComponent(
 												new TextInputBuilder()
-													.setCustomId(`${customId}_input`)
+													.setCustomId(`${editType}_input`)
 													.setStyle(TextInputStyle.Short)
-													.setValue(
-														pomodoroSettings[editTypeIdentifier].toString(),
-													)
+													.setValue(pomodoroSettings[editType].toString())
 													.setRequired(true),
 											),
 									)
 							: new ModalBuilder()
-									.setCustomId(`pomodoro_settings_edit_${editType}`)
+									.setCustomId(`pomodoro_settings_editModal_${editType}`)
 									.setTitle('ポモドーロタイマーのデフォルト設定の編集2')
 									.setLabelComponents(
 										new LabelBuilder()
-											.setLabel(labels[editTypeIdentifier])
+											.setLabel(labels[editType])
 											.setStringSelectMenuComponent(
 												new StringSelectMenuBuilder()
-													.setCustomId(`${customId}_input`)
+													.setCustomId(`${editType}_input`)
 													.setOptions(
 														new StringSelectMenuOptionBuilder()
 															.setLabel('有効')
