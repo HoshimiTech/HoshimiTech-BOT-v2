@@ -2,6 +2,7 @@ const {
 	InteractionType,
 	ApplicationCommandType,
 	ModalBuilder,
+	LabelBuilder,
 	TextInputBuilder,
 	TextInputStyle,
 	ActionRowBuilder,
@@ -9,7 +10,6 @@ const {
 	ButtonStyle,
 	ButtonBuilder,
 	MessageFlags,
-	LabelBuilder,
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
 } = require('discord.js');
@@ -255,12 +255,127 @@ module.exports = async (client, interaction) => {
 						await interaction.deferUpdate();
 						return pomodoroUtils.sendPomodoroStatus(interaction, pomodoroState);
 					}
+					case 'pomodoro_settings_reset': {
+						// 権限チェック
+						if (
+							!interaction.member.permissions.has(
+								PermissionsBitField.Flags.ManageGuild,
+							)
+						) {
+							return interaction.reply({
+								content:
+									'❌ このコマンドを実行する権限がありません。このコマンドを実行するためには「サーバー管理」権限が必要です。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						// 現在の設定を取得
+						const serverData = await serverSchema.findById(
+							interaction.guild.id,
+						);
+
+						if (!serverData || !serverData.pomodoro) {
+							return interaction.reply({
+								content:
+									'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						// デフォルト設定をリセット
+						serverData.pomodoro.defaultWorkTime = 25;
+						serverData.pomodoro.defaultBreakTime = 5;
+						serverData.pomodoro.defaultLongBreakTime = 15;
+						serverData.pomodoro.defaultCycleCount = 4;
+						serverData.pomodoro.defaultVoiceNotification = false;
+						serverData.pomodoro.defaultVoiceNotificationVolume = 50;
+
+						return serverData.save().then(() => {
+							return interaction.reply({
+								content:
+									'✅ ポモドーロタイマーのデフォルト設定をリセットしました。',
+							});
+						});
+					}
 					case 'cancel': {
 						return interaction.message.delete();
 					}
 				}
 
-				if (interaction?.customId.includes('pomodoro_stop')) {
+				if (interaction?.customId.startsWith('pomodoro_settings_edit')) {
+					// 現在のデフォルト設定の取得
+					const serverData = await serverSchema.findById(interaction.guild.id);
+					const pomodoroSettings = serverData.pomodoro;
+
+					// 編集タイプの取得
+					const customId = interaction.customId;
+					const editType = customId.split('_').slice(3).join('_');
+					// _を消して_の後の文字を大文字に
+					const editTypeIdentifier = editType.replace(/_./g, (match) =>
+						match[1].toUpperCase(),
+					);
+
+					// モーダルの作成
+					const labels = {
+						defaultWorkTime: '作業時間 (分)',
+						defaultBreakTime: '休憩時間 (分)',
+						defaultLongBreakTime: '長い休憩時間 (分)',
+						defaultCycleCount: '長い休憩までの回数',
+						defaultVoiceNotification: '通知音を鳴らすかどうか',
+						defaultVoiceNotificationVolume: '通知音の音量 (0-100%)',
+					};
+
+					const modal =
+						editTypeIdentifier !== 'defaultVoiceNotification'
+							? new ModalBuilder()
+									.setCustomId(`pomodoro_settings_edit_${editType}`)
+									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
+									.setLabelComponents(
+										new LabelBuilder()
+											.setLabel(labels[editTypeIdentifier])
+											.setTextInputComponent(
+												new TextInputBuilder()
+													.setCustomId(`${customId}_input`)
+													.setStyle(TextInputStyle.Short)
+													.setValue(
+														pomodoroSettings[editTypeIdentifier].toString(),
+													)
+													.setRequired(true),
+											),
+									)
+							: new ModalBuilder()
+									.setCustomId(`pomodoro_settings_edit_${editType}`)
+									.setTitle('ポモドーロタイマーのデフォルト設定の編集2')
+									.setLabelComponents(
+										new LabelBuilder()
+											.setLabel(labels[editTypeIdentifier])
+											.setStringSelectMenuComponent(
+												new StringSelectMenuBuilder()
+													.setCustomId(`${customId}_input`)
+													.setOptions(
+														new StringSelectMenuOptionBuilder()
+															.setLabel('有効')
+															.setValue('true')
+															.setEmoji('✅')
+															.setDefault(
+																pomodoroSettings.defaultVoiceNotification ===
+																	true,
+															),
+														new StringSelectMenuOptionBuilder()
+															.setLabel('無効')
+															.setValue('false')
+															.setEmoji('❌')
+															.setDefault(
+																pomodoroSettings.defaultVoiceNotification ===
+																	false,
+															),
+													),
+											),
+									);
+
+					// モーダルの表示
+					return interaction.showModal(modal);
+				} else if (interaction?.customId.includes('pomodoro_stop')) {
 					// ポモドーロタイマーの状態取得とステータスの確認
 					const pomodoroState = await pomodoroUtils.getPomodoroState(
 						client,

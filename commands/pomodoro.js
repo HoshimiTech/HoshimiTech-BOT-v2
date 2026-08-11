@@ -89,29 +89,10 @@ module.exports = {
 				.setName('stop')
 				.setDescription('ポモドーロタイマーを終了します。'),
 		)
-		.addSubcommandGroup((subcommands) =>
-			subcommands
+		.addSubcommand((subcommand) =>
+			subcommand
 				.setName('settings')
-				.setDescription('ポモドーロタイマーのデフォルト設定を変更します。')
-				.addSubcommand((subcommand) =>
-					subcommand
-						.setName('set')
-						.setDescription('ポモドーロタイマーのデフォルト設定を変更します。'),
-				)
-				.addSubcommand((subcommand) =>
-					subcommand
-						.setName('show')
-						.setDescription(
-							'現在のポモドーロタイマーのデフォルト設定を表示します。',
-						),
-				)
-				.addSubcommand((subcommand) =>
-					subcommand
-						.setName('reset')
-						.setDescription(
-							'ポモドーロタイマーのデフォルト設定をリセットします。',
-						),
-				),
+				.setDescription('ポモドーロタイマーのデフォルト設定を変更します。'),
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
@@ -121,12 +102,9 @@ module.exports = {
 
 	run: async (client, interaction) => {
 		try {
-			const subcommandGroup = interaction.options.getSubcommandGroup();
 			const subcommand = interaction.options.getSubcommand();
-			let mode;
-			subcommandGroup === null ? (mode = subcommand) : (mode = subcommandGroup);
 
-			if (mode === 'start') {
+			if (subcommand === 'start') {
 				const workTime = interaction.options.getInteger('work_time');
 				const breakTime = interaction.options.getInteger('break_time');
 				const longBreakTime = interaction.options.getInteger('long_break_time');
@@ -176,19 +154,19 @@ module.exports = {
 					voiceNotification,
 					voiceNotificationVolume,
 				});
-			} else if (mode === 'pause') {
+			} else if (subcommand === 'pause') {
 				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 				await pomodoro.pause(client, interaction);
-			} else if (mode === 'resume') {
+			} else if (subcommand === 'resume') {
 				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 				await pomodoro.resume(client, interaction);
-			} else if (mode === 'status') {
+			} else if (subcommand === 'status') {
 				await pomodoro.status(client, interaction);
-			} else if (mode === 'stop') {
+			} else if (subcommand === 'stop') {
 				await pomodoro.stop(client, interaction);
-			} else if (mode === 'settings') {
+			} else if (subcommand === 'settings') {
 				// 権限チェック
 				if (
 					!interaction.member.permissions.has(
@@ -207,136 +185,53 @@ module.exports = {
 						});
 
 				serverSchema.findById(interaction.guild.id).then((serverData) => {
-					// サブコマンドの処理
-					if (subcommand === 'set') {
-						const defaultSettings = serverData.pomodoro;
-						// 設定用Component V2埋め込みの準備
-						const embed = new ContainerBuilder()
-							.addTextDisplayComponents([
-								new TextDisplayBuilder({
-									content: '## ℹ️ 現在のポモドーロタイマーのデフォルト設定',
-								}),
-							])
-							.addSectionComponents([
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- 作業時間: ${defaultSettings.defaultWorkTime}分`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId('pomodoro_settings_work_time')
-											.setLabel('変更')
-											.setStyle(ButtonStyle.Secondary),
+					const defaultSettings = serverData.pomodoro;
+					// 埋め込みの準備
+					const labels = {
+						defaultWorkTime: '作業時間: DATA分',
+						defaultBreakTime: '休憩時間: DATA分',
+						defaultLongBreakTime: '長めの休憩時間: DATA分',
+						defaultCycleCount: 'セッション数: DATA回',
+						defaultVoiceNotification: '音声通知: DATA',
+						defaultVoiceNotificationVolume: '音声通知の音量: DATA%',
+					};
+					let sections = [];
+					for (const key in labels) {
+						const value = defaultSettings[key];
+						sections.push(
+							new SectionBuilder()
+								.addTextDisplayComponents(
+									new TextDisplayBuilder().setContent(
+										`- ${labels[key].replace('DATA', value)}`,
 									),
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- 休憩時間: ${defaultSettings.defaultBreakTime}分`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId('pomodoro_settings_break_time')
-											.setLabel('変更')
-											.setStyle(ButtonStyle.Secondary),
-									),
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- 長めの休憩時間: ${defaultSettings.defaultLongBreakTime}分`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId('pomodoro_settings_long_break_time')
-											.setLabel('変更')
-											.setStyle(ButtonStyle.Secondary),
-									),
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- セッション数: ${defaultSettings.defaultCycleCount}回`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId('pomodoro_settings_cycle_count')
-											.setLabel('変更')
-											.setStyle(ButtonStyle.Secondary),
-									),
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- 音声通知: ${defaultSettings.defaultVoiceNotification ? '有効' : '無効'}`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId('pomodoro_settings_voice_notification')
-											.setLabel(
-												defaultSettings.defaultVoiceNotification
-													? '有効'
-													: '無効',
-											)
-											.setStyle(
-												defaultSettings.defaultVoiceNotification
-													? ButtonStyle.Success
-													: ButtonStyle.Danger,
-											),
-									),
-								new SectionBuilder()
-									.addTextDisplayComponents([
-										new TextDisplayBuilder({
-											content: `- 音声通知の音量: ${defaultSettings.defaultVoiceNotificationVolume}%`,
-										}),
-									])
-									.setButtonAccessory(
-										new ButtonBuilder()
-											.setCustomId(
-												'pomodoro_settings_voice_notification_volume',
-											)
-											.setLabel('変更')
-											.setStyle(ButtonStyle.Secondary),
-									),
-							]);
-
-						return interaction.reply({
-							content: '',
-							components: [embed],
-							flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
-						});
-					} else if (subcommand === 'show') {
-						const defaultSettings = serverData.pomodoro;
-						const embed = new EmbedBuilder()
-							.setTitle('ℹ️ ポモドーロタイマーのデフォルト設定')
-							.setDescription(
-								`- 作業時間: ${defaultSettings.defaultWorkTime}分
-- 休憩時間: ${defaultSettings.defaultBreakTime}分
-- 長めの休憩時間: ${defaultSettings.defaultLongBreakTime}分
-- セッション数: ${defaultSettings.defaultCycleCount}回
-- 音声通知: ${defaultSettings.defaultVoiceNotification ? '有効' : '無効'}
-- 音声通知の音量: ${defaultSettings.defaultVoiceNotificationVolume}%`,
-							)
-							.setTimestamp();
-						return interaction.reply({ embeds: [embed] });
-					} else if (subcommand === 'reset') {
-						// デフォルト設定をリセット
-						serverData.pomodoro.defaultWorkTime = 25;
-						serverData.pomodoro.defaultBreakTime = 5;
-						serverData.pomodoro.defaultLongBreakTime = 15;
-						serverData.pomodoro.defaultCycleCount = 4;
-						serverData.pomodoro.defaultVoiceNotification = false;
-						serverData.pomodoro.defaultVoiceNotificationVolume = 50;
-
-						return serverData.save().then(() => {
-							return interaction.reply({
-								content:
-									'✅ ポモドーロタイマーのデフォルト設定をリセットしました。',
-							});
-						});
+								)
+								.setButtonAccessory(
+									new ButtonBuilder()
+										.setCustomId(`pomodoro_settings_edit_${key}`)
+										.setLabel('変更')
+										.setStyle(ButtonStyle.Secondary),
+								),
+						);
 					}
+					const embed = new ContainerBuilder()
+						.addTextDisplayComponents(
+							new TextDisplayBuilder().setContent(
+								'## ℹ️ ポモドーロタイマーのデフォルト設定',
+							),
+						)
+						.addSectionComponents(sections);
+					// ボタンの準備
+					const button = new ActionRowBuilder().addComponents(
+						new ButtonBuilder()
+							.setCustomId('pomodoro_settings_reset')
+							.setLabel('全て初期化する')
+							.setStyle(ButtonStyle.Danger),
+					);
+
+					return interaction.reply({
+						components: [embed, button],
+						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+					});
 
 					serverData.save().then(() => {
 						// データベースの更新が成功した場合
@@ -351,7 +246,7 @@ module.exports = {
 						});
 					});
 				});
-			} else if (mode === 'panel') {
+			} else if (subcommand === 'panel') {
 				const embed = new EmbedBuilder()
 					.setTitle('⏱ ポモドーロタイマー')
 					.setDescription('※再開は一時的子中にのみ使用できます。');
