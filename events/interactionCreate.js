@@ -329,6 +329,11 @@ module.exports = async (client, interaction) => {
 									.setLabelComponents(
 										new LabelBuilder()
 											.setLabel(labels[editType])
+											.setDescription(
+												editType === 'defaultVoiceNotificationVolume'
+													? `単位を付けずに0から100までの整数で入力してください。現在は ${pomodoroSettings[editType]}%に設定されています。`
+													: `単位を付けずに1以上の整数で入力してください。現在は ${pomodoroSettings[editType]}${editType === 'defaultCycleCount' ? '回' : '分'}に設定されています。`,
+											)
 											.setTextInputComponent(
 												new TextInputBuilder()
 													.setCustomId(`${editType}_input`)
@@ -339,10 +344,13 @@ module.exports = async (client, interaction) => {
 									)
 							: new ModalBuilder()
 									.setCustomId(`pomodoro_settings_editModal_${editType}`)
-									.setTitle('ポモドーロタイマーのデフォルト設定の編集2')
+									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
 									.setLabelComponents(
 										new LabelBuilder()
 											.setLabel(labels[editType])
+											.setDescription(
+												`現在は ${pomodoroSettings[editType] ? '有効' : '無効'} に設定されています。`,
+											)
 											.setStringSelectMenuComponent(
 												new StringSelectMenuBuilder()
 													.setCustomId(`${editType}_input`)
