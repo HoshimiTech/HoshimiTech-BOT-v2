@@ -31,12 +31,16 @@ const serverSchema = new mongoose.Schema(
 			transportedMessages: [{ type: String }],
 		},
 		pomodoro: {
-			defaultWorkTime: { type: Number, default: 25 }, //デフォルトの作業時間（分）
-			defaultBreakTime: { type: Number, default: 5 }, //デフォルトの休憩時間（分）
-			defaultLongBreakTime: { type: Number, default: 15 }, //デフォルトの長い休憩時間（分）
-			defaultCycleCount: { type: Number, default: 4 }, //デフォルトの長い休憩までの回数
-			defaultVoiceNotification: { type: Boolean, default: false }, //ボイス通知の有効/無効
-			defaultVoiceNotificationVolume: { type: Number, default: 50 }, //ボイス通知の音量（1-100%）
+			interval: {
+				workTime: { type: Number, default: 25 }, //デフォルトの作業時間（分）
+				breakTime: { type: Number, default: 5 }, //デフォルトの休憩時間（分）
+				longBreakTime: { type: Number, default: 15 }, //デフォルトの長い休憩時間（分）
+			},
+			timesUntilLongBreak: { type: Number, default: 4 }, //デフォルトの長い休憩までの回数
+			voiceNotification: {
+				status: { type: Boolean, default: false }, //ボイス通知の有効/無効
+				volume: { type: Number, default: 50 }, //ボイス通知の音量（1-100%）
+			},
 		},
 	},
 	{ versionKey: false },

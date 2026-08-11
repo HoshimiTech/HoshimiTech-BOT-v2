@@ -12,6 +12,7 @@ const {
 	MessageFlags,
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
+	PermissionsBitField,
 } = require('discord.js');
 const fs = require('fs');
 const serverSchema = require('../models/serverSchema.js');
@@ -261,7 +262,7 @@ module.exports = async (client, interaction) => {
 						}
 
 						const embed = new EmbedBuilder().setDescription(
-							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.defaultWorkTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.defaultBreakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.defaultLongBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.defaultCycleCount}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.defaultVoiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.defaultVoiceNotificationVolume}\` %\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
 						);
 
 						return interaction.reply({
@@ -316,12 +317,12 @@ module.exports = async (client, interaction) => {
 						}
 
 						// デフォルト設定をリセット
-						serverData.pomodoro.defaultWorkTime = 25;
-						serverData.pomodoro.defaultBreakTime = 5;
-						serverData.pomodoro.defaultLongBreakTime = 15;
-						serverData.pomodoro.defaultCycleCount = 4;
-						serverData.pomodoro.defaultVoiceNotification = false;
-						serverData.pomodoro.defaultVoiceNotificationVolume = 50;
+						serverData.pomodoro.interval.workTime = 25;
+						serverData.pomodoro.interval.breakTime = 5;
+						serverData.pomodoro.interval.longBreakTime = 15;
+						serverData.pomodoro.timesUntilLongBreak = 4;
+						serverData.pomodoro.voiceNotification.status = false;
+						serverData.pomodoro.voiceNotification.volume = 50;
 
 						return serverData.save().then(() => {
 							return interaction.reply({
@@ -346,35 +347,52 @@ module.exports = async (client, interaction) => {
 
 					// モーダルの作成
 					const labels = {
-						defaultWorkTime: '作業時間 (分)',
-						defaultBreakTime: '休憩時間 (分)',
-						defaultLongBreakTime: '長い休憩時間 (分)',
-						defaultCycleCount: '長い休憩までの回数',
-						defaultVoiceNotification: 'ボイスチャンネルでの音声による通知',
-						defaultVoiceNotificationVolume:
-							'ボイスチャンネルでの通知の際の音量 (0-100%)',
+						workTime: {
+							label: '作業時間 (分)',
+							value: pomodoroSettings.interval.workTime,
+						},
+						breakTime: {
+							label: '休憩時間 (分)',
+							value: pomodoroSettings.interval.breakTime,
+						},
+						longBreakTime: {
+							label: '長い休憩時間 (分)',
+							value: pomodoroSettings.interval.longBreakTime,
+						},
+						timesUntilLongBreak: {
+							label: '長い休憩までの回数',
+							value: pomodoroSettings.timesUntilLongBreak,
+						},
+						voiceNotificationStatus: {
+							label: 'ボイスチャンネルでの音声による通知',
+							value: pomodoroSettings.voiceNotification.status,
+						},
+						voiceNotificationVolume: {
+							label: 'ボイスチャンネルでの通知の際の音量 (0-100%)',
+							value: pomodoroSettings.voiceNotification.volume,
+						},
 					};
 
 					const modal =
-						editType !== 'defaultVoiceNotification'
+						editType !== 'voiceNotificationStatus'
 							? new ModalBuilder()
 									.setCustomId(`pomodoro_settings_editModal_${editType}`)
 									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
 									.setLabelComponents(
 										new LabelBuilder()
-											.setLabel(labels[editType])
+											.setLabel(labels[editType].label)
 											.setDescription(
-												editType === 'defaultVoiceNotificationVolume'
-													? `単位を付けずに0から100までの整数で入力してください。現在は ${pomodoroSettings[editType]}%に設定されています。`
+												editType === 'voiceNotificationVolume'
+													? `単位を付けずに0から100までの整数で入力してください。現在は ${labels[editType].value}%に設定されています。`
 													: editType === 'defaultCycleCount'
-														? `単位を付けずに0以上の整数で入力してください。現在は ${pomodoroSettings[editType]}回に設定されています。`
-														: `単位を付けずに1以上の整数で入力してください。現在は ${pomodoroSettings[editType]}分に設定されています。`,
+														? `単位を付けずに0以上の整数で入力してください。現在は ${labels[editType].value}回に設定されています。`
+														: `単位を付けずに1以上の整数で入力してください。現在は ${labels[editType].value}分に設定されています。`,
 											)
 											.setTextInputComponent(
 												new TextInputBuilder()
 													.setCustomId(`${editType}_input`)
 													.setStyle(TextInputStyle.Short)
-													.setValue(pomodoroSettings[editType].toString())
+													.setValue(labels[editType].value.toString())
 													.setRequired(true),
 											),
 									)
@@ -383,9 +401,9 @@ module.exports = async (client, interaction) => {
 									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
 									.setLabelComponents(
 										new LabelBuilder()
-											.setLabel(labels[editType])
+											.setLabel(labels[editType].label)
 											.setDescription(
-												`現在は ${pomodoroSettings[editType] ? '通知する' : '通知しない'} に設定されています。`,
+												`現在は ${labels[editType].value ? '通知する' : '通知しない'} に設定されています。`,
 											)
 											.setStringSelectMenuComponent(
 												new StringSelectMenuBuilder()
@@ -395,18 +413,12 @@ module.exports = async (client, interaction) => {
 															.setLabel('通知する')
 															.setValue('true')
 															.setEmoji('✅')
-															.setDefault(
-																pomodoroSettings.defaultVoiceNotification ===
-																	true,
-															),
+															.setDefault(labels[editType].value === true),
 														new StringSelectMenuOptionBuilder()
 															.setLabel('通知しない')
 															.setValue('false')
 															.setEmoji('❌')
-															.setDefault(
-																pomodoroSettings.defaultVoiceNotification ===
-																	false,
-															),
+															.setDefault(labels[editType].value === false),
 													),
 											),
 									);
@@ -858,7 +870,7 @@ module.exports = async (client, interaction) => {
 
 					// 入力値の取得
 					const inputValue =
-						editType !== 'defaultVoiceNotification'
+						editType !== 'voiceNotificationStatus'
 							? interaction.fields.getTextInputValue(`${editType}_input`)
 							: interaction.fields.getStringSelectValues(
 									`${editType}_input`,
@@ -866,9 +878,9 @@ module.exports = async (client, interaction) => {
 
 					// 入力値の検証
 					if (
-						(editType === 'defaultWorkTime' ||
-							editType === 'defaultBreakTime' ||
-							editType === 'defaultLongBreakTime') &&
+						(editType === 'workTime' ||
+							editType === 'breakTime' ||
+							editType === 'longBreakTime') &&
 						(isNaN(inputValue) || inputValue < 1)
 					) {
 						return interaction.reply({
@@ -876,7 +888,7 @@ module.exports = async (client, interaction) => {
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
-						editType === 'defaultCycleCount' &&
+						editType === 'timesUntilLongBreak' &&
 						(isNaN(inputValue) || inputValue < 0)
 					) {
 						return interaction.reply({
@@ -884,7 +896,7 @@ module.exports = async (client, interaction) => {
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
-						editType === 'defaultVoiceNotification' &&
+						editType === 'voiceNotificationStatus' &&
 						!(inputValue === 'true' || inputValue === 'false')
 					) {
 						return interaction.reply({
@@ -893,7 +905,7 @@ module.exports = async (client, interaction) => {
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
-						editType === 'defaultVoiceNotificationVolume' &&
+						editType === 'voiceNotificationVolume' &&
 						(isNaN(inputValue) || inputValue <= 0 || inputValue > 100)
 					) {
 						return interaction.reply({
@@ -913,20 +925,29 @@ module.exports = async (client, interaction) => {
 						});
 					}
 
-					serverData.pomodoro[editType] =
-						editType === 'defaultVoiceNotification'
-							? inputValue === 'true'
-							: Number(inputValue);
+					if (editType === 'workTime') {
+						serverData.pomodoro.interval.workTime = Number(inputValue);
+					} else if (editType === 'breakTime') {
+						serverData.pomodoro.interval.breakTime = Number(inputValue);
+					} else if (editType === 'longBreakTime') {
+						serverData.pomodoro.interval.longBreakTime = Number(inputValue);
+					} else if (editType === 'timesUntilLongBreak') {
+						serverData.pomodoro.timesUntilLongBreak = Number(inputValue);
+					} else if (editType === 'voiceNotificationStatus') {
+						serverData.pomodoro.voiceNotification.status =
+							inputValue === 'true';
+					} else if (editType === 'voiceNotificationVolume') {
+						serverData.pomodoro.voiceNotification.volume = Number(inputValue);
+					}
 
 					await serverData.save().then(() => {
 						const label = {
-							defaultWorkTime: '作業時間',
-							defaultBreakTime: '休憩時間',
-							defaultLongBreakTime: '長い休憩時間',
-							defaultCycleCount: '長い休憩までの回数',
-							defaultVoiceNotification: 'ボイスチャンネルでの音声による通知',
-							defaultVoiceNotificationVolume:
-								'ボイスチャンネルでの通知の際の音量',
+							workTime: '作業時間',
+							breakTime: '休憩時間',
+							longBreakTime: '長い休憩時間',
+							timesUntilLongBreak: '長い休憩までの回数',
+							voiceNotificationStatus: 'ボイスチャンネルでの音声による通知',
+							voiceNotificationVolume: 'ボイスチャンネルでの通知の際の音量',
 						};
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,

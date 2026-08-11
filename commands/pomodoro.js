@@ -189,26 +189,44 @@ module.exports = {
 						});
 
 				serverSchema.findById(interaction.guild.id).then((serverData) => {
-					const defaultSettings = serverData.pomodoro;
+					const pomodoroSettings = serverData.pomodoro;
 					// 埋め込みの準備
 					const labels = {
-						defaultWorkTime: '作業時間: DATA分',
-						defaultBreakTime: '休憩時間: DATA分',
-						defaultLongBreakTime: '長い休憩時間: DATA分',
-						defaultCycleCount: '長い休憩までの回数: DATA回',
-						defaultVoiceNotification:
-							'ボイスチャンネルでの音声による通知: DATA',
-						defaultVoiceNotificationVolume:
-							'ボイスチャンネルでの通知の際の音量: DATA%',
+						workTime: {
+							label: '作業時間: DATA分',
+							value: pomodoroSettings.interval.workTime,
+						},
+						breakTime: {
+							label: '休憩時間: DATA分',
+							value: pomodoroSettings.interval.breakTime,
+						},
+						longBreakTime: {
+							label: '長い休憩時間: DATA分',
+							value: pomodoroSettings.interval.longBreakTime,
+						},
+						timesUntilLongBreak: {
+							label: '長い休憩までの回数: DATA回',
+							value: pomodoroSettings.timesUntilLongBreak,
+						},
+						voiceNotificationStatus: {
+							label: 'ボイスチャンネルでの音声による通知: DATA',
+							value: pomodoroSettings.voiceNotification.status
+								? '通知する'
+								: '通知しない',
+						},
+						voiceNotificationVolume: {
+							label: 'ボイスチャンネルでの通知の際の音量: DATA%',
+							value: pomodoroSettings.voiceNotification.volume,
+						},
 					};
 					let sections = [];
 					for (const key in labels) {
-						const value = defaultSettings[key];
+						const value = labels[key].value;
 						sections.push(
 							new SectionBuilder()
 								.addTextDisplayComponents(
 									new TextDisplayBuilder().setContent(
-										`- ${key !== 'defaultVoiceNotification' ? labels[key].replace('DATA', value) : labels[key].replace('DATA', value ? '通知する' : '通知しない')}`,
+										`- ${key !== 'voiceNotificationStatus' ? labels[key].label.replace('DATA', value) : labels[key].label.replace('DATA', value ? '通知する' : '通知しない')}`,
 									),
 								)
 								.setButtonAccessory(
