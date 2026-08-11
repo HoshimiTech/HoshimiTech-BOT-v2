@@ -191,6 +191,39 @@ module.exports = async (client, interaction) => {
 						return interaction.showModal(modal);
 					}
 					case 'pomodoro_start': {
+						// ユーザーのVCを取得
+						if (!interaction?.member?.voice?.channelId)
+							return interaction
+								?.reply({
+									content:
+										'❌ ボイスチャンネルに接続してから実行してください。',
+									flags: MessageFlags.Ephemeral,
+								})
+								.catch((err) => {
+									// 送信失敗は無視
+									void err;
+								});
+						const guild_me = interaction?.guild?.members?.cache?.get(
+							client?.user?.id,
+						);
+						if (guild_me?.voice?.channelId) {
+							if (
+								guild_me?.voice?.channelId !==
+								interaction?.member?.voice?.channelId
+							) {
+								return interaction
+									?.reply({
+										content: '❌ BOTと同じボイスチャンネルに接続してください。',
+										flags: MessageFlags.Ephemeral,
+									})
+									.catch((err) => {
+										// 送信失敗は無視
+										void err;
+									});
+							}
+						}
+
+						// ポモドーロタイマー開始
 						return pomodoroManager.start(client, interaction);
 					}
 					case 'pomodoro_pause': {
