@@ -807,6 +807,81 @@ module.exports = async (client, interaction) => {
 							});
 					}
 				}
+
+				// ポモドーロタイマーのモーダル応答
+				if (interaction?.customId.startsWith('pomodoro_settings_editModal')) {
+					const editType = interaction.customId.split('_').slice(3).join('_');
+
+					// 入力値の取得
+					const inputValue =
+						editType !== 'defaultVoiceNotification'
+							? interaction.fields.getTextInputValue(`${editType}_input`)
+							: interaction.fields.getStringSelectValues(
+									`${editType}_input`,
+								)[0];
+
+					// 入力値の検証
+					if (
+						(editType === 'defaultWorkTime' ||
+							editType === 'defaultBreakTime' ||
+							editType === 'defaultLongBreakTime' ||
+							editType === 'defaultCycleCount') &&
+						(isNaN(inputValue) || inputValue < 1)
+					) {
+						return interaction.reply({
+							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'defaultVoiceNotification' &&
+						!(inputValue === 'true' || inputValue === 'false')
+					) {
+						return interaction.reply({
+							content:
+								'❌ 入力値が不正です。trueまたはfalseを入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'defaultVoiceNotificationVolume' &&
+						(isNaN(inputValue) || inputValue < 0 || inputValue > 100)
+					) {
+						return interaction.reply({
+							content:
+								'❌ 入力値が不正です。0以上100以下の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					}
+
+					// 入力値の保存
+					const serverData = await serverSchema.findById(interaction.guild.id);
+					if (!serverData) {
+						return interaction.reply({
+							content:
+								'❌ このサーバーは登録されていません。BOTを再度招待してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					}
+
+					serverData.pomodoro[editType] =
+						editType === 'defaultVoiceNotification'
+							? inputValue === 'true'
+							: Number(inputValue);
+
+					await serverData.save().then(() => {
+						const label = {
+							defaultWorkTime: '作業時間',
+							defaultBreakTime: '休憩時間',
+							defaultLongBreakTime: '長い休憩時間',
+							defaultCycleCount: '長い休憩までの回数',
+							defaultVoiceNotification: '通知音を鳴らすかどうか',
+							defaultVoiceNotificationVolume: '通知音の音量',
+						};
+						return interaction.reply({
+							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,
+							flags: MessageFlags.Ephemeral,
+						});
+					});
+				}
 			}
 
 			if (
