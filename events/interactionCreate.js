@@ -366,7 +366,9 @@ module.exports = async (client, interaction) => {
 											.setDescription(
 												editType === 'defaultVoiceNotificationVolume'
 													? `単位を付けずに0から100までの整数で入力してください。現在は ${pomodoroSettings[editType]}%に設定されています。`
-													: `単位を付けずに1以上の整数で入力してください。現在は ${pomodoroSettings[editType]}${editType === 'defaultCycleCount' ? '回' : '分'}に設定されています。`,
+													: editType === 'defaultCycleCount'
+														? `単位を付けずに0以上の整数で入力してください。現在は ${pomodoroSettings[editType]}回に設定されています。`
+														: `単位を付けずに1以上の整数で入力してください。現在は ${pomodoroSettings[editType]}分に設定されています。`,
 											)
 											.setTextInputComponent(
 												new TextInputBuilder()
@@ -866,12 +868,19 @@ module.exports = async (client, interaction) => {
 					if (
 						(editType === 'defaultWorkTime' ||
 							editType === 'defaultBreakTime' ||
-							editType === 'defaultLongBreakTime' ||
-							editType === 'defaultCycleCount') &&
+							editType === 'defaultLongBreakTime') &&
 						(isNaN(inputValue) || inputValue < 1)
 					) {
 						return interaction.reply({
 							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'defaultCycleCount' &&
+						(isNaN(inputValue) || inputValue < 0)
+					) {
+						return interaction.reply({
+							content: '❌ 入力値が不正です。0以上の数値を入力してください。',
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
