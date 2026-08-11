@@ -202,7 +202,7 @@ module.exports = {
 							new SectionBuilder()
 								.addTextDisplayComponents(
 									new TextDisplayBuilder().setContent(
-										`- ${labels[key].replace('DATA', value)}`,
+										`- ${key !== 'defaultVoiceNotification' ? labels[key].replace('DATA', value) : labels[key].replace('DATA', value ? '有効' : '無効')}`,
 									),
 								)
 								.setButtonAccessory(
@@ -236,13 +236,8 @@ module.exports = {
 					serverData.save().then(() => {
 						// データベースの更新が成功した場合
 						return interaction.reply({
-							content: `✅ ポモドーロタイマーのデフォルト設定を更新しました。現在の設定は次の通りです。
-- 作業時間: ${serverData.pomodoro.defaultWorkTime}分
-- 休憩時間: ${serverData.pomodoro.defaultBreakTime}分
-- 長めの休憩時間: ${serverData.pomodoro.defaultLongBreakTime}分
-- セッション数: ${serverData.pomodoro.defaultCycleCount}回
-- 音声通知: ${serverData.pomodoro.defaultVoiceNotification ? '有効' : '無効'}
-- 音声通知の音量: ${serverData.pomodoro.defaultVoiceNotificationVolume}%`,
+							content:
+								'✅ ポモドーロタイマーのデフォルト設定を初期化しました。',
 						});
 					});
 				});
