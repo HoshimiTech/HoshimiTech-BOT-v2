@@ -9,6 +9,8 @@ const {
 	ContainerBuilder,
 	TextDisplayBuilder,
 	SectionBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
 const pomodoro = require('../lib/pomodoro/main.js');
@@ -45,7 +47,7 @@ module.exports = {
 				)
 				.addIntegerOption((option) =>
 					option
-						.setName('cycle_count')
+						.setName('times_until_long_break')
 						.setDescription(
 							'作業時間と休憩時間のセットの、何回に1回長い休憩時間を設けるかを設定します。(単位: 回)',
 						)
@@ -112,7 +114,9 @@ module.exports = {
 				const workTime = interaction.options.getInteger('work_time');
 				const breakTime = interaction.options.getInteger('break_time');
 				const longBreakTime = interaction.options.getInteger('long_break_time');
-				const cycleCount = interaction.options.getInteger('cycle_count');
+				const timesUntilLongBreak = interaction.options.getInteger(
+					'times_until_long_break',
+				);
 				const voiceNotification =
 					interaction.options.getBoolean('voice_notification');
 				const voiceNotificationVolume = interaction.options.getInteger(
@@ -154,7 +158,7 @@ module.exports = {
 					workTime,
 					breakTime,
 					longBreakTime,
-					cycleCount,
+					timesUntilLongBreak,
 					voiceNotification,
 					voiceNotificationVolume,
 				});
@@ -193,40 +197,64 @@ module.exports = {
 					// 埋め込みの準備
 					const labels = {
 						workTime: {
-							label: '作業時間: DATA分',
+							label: '作業時間:\n```\nDATA分\n```',
 							value: pomodoroSettings.interval.workTime,
 						},
 						breakTime: {
-							label: '休憩時間: DATA分',
+							label: '休憩時間:\n```\nDATA分\n```',
 							value: pomodoroSettings.interval.breakTime,
 						},
 						longBreakTime: {
-							label: '長い休憩時間: DATA分',
+							label: '長い休憩時間:\n```\nDATA分\n```',
 							value: pomodoroSettings.interval.longBreakTime,
 						},
 						timesUntilLongBreak: {
-							label: '長い休憩までの回数: DATA回',
+							label: '長い休憩までの回数:\n```\nDATA回\n```',
 							value: pomodoroSettings.timesUntilLongBreak,
 						},
 						voiceNotificationStatus: {
-							label: 'ボイスチャンネルでの音声による通知: DATA',
+							label: 'ボイスチャンネルでの音声による通知:\n```\nDATA\n```',
 							value: pomodoroSettings.voiceNotification.status
-								? '通知する'
-								: '通知しない',
+								? '✅ 通知する'
+								: '❌ 通知しない',
 						},
 						voiceNotificationVolume: {
-							label: 'ボイスチャンネルでの通知の際の音量: DATA%',
+							label: 'ボイスチャンネルでの通知の際の音量:\n```\nDATA%\n```',
 							value: pomodoroSettings.voiceNotification.volume,
 						},
+						voiceNotificationMessageWorkTime: {
+							label: '作業時間のボイス通知メッセージ:\n```\nDATA\n```',
+							value:
+								pomodoroSettings.voiceNotification.message.workTime ||
+								'作業時間が始まります。集中して取り組んでください。',
+						},
+						voiceNotificationMessageBreakTime: {
+							label: '休憩時間のボイス通知メッセージ:\n```\nDATA\n```',
+							value:
+								pomodoroSettings.voiceNotification.message.breakTime ||
+								'休憩時間が始まります。リラックスして休んでください。',
+						},
+						voiceNotificationMessageLongBreakTime: {
+							label: '長い休憩時間のボイス通知メッセージ:\n```\nDATA\n```',
+							value:
+								pomodoroSettings.voiceNotification.message.longBreakTime ||
+								'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
+						},
+						voiceNotificationMessageStopTime: {
+							label: 'ポモドーロ終了時のボイス通知メッセージ:\n```\nDATA\n```',
+							value:
+								pomodoroSettings.voiceNotification.message.stopTime ||
+								'ポモドーロタイマーが終了しました。お疲れ様でした！',
+						},
 					};
-					let sections = [];
+					const sections = [];
 					for (const key in labels) {
 						const value = labels[key].value;
 						sections.push(
 							new SectionBuilder()
 								.addTextDisplayComponents(
 									new TextDisplayBuilder().setContent(
-										`- ${key !== 'voiceNotificationStatus' ? labels[key].label.replace('DATA', value) : labels[key].label.replace('DATA', value ? '通知する' : '通知しない')}`,
+										`- ${labels[key].label.replace('DATA', value)}`,
 									),
 								)
 								.setButtonAccessory(
@@ -237,13 +265,24 @@ module.exports = {
 								),
 						);
 					}
+					const separator = new SeparatorBuilder()
+						// 仕切り線を表示するか(デフォルト: true)
+						.setDivider(true)
+						// 仕切り線の前後の余白の大きさを設定
+						.setSpacing(SeparatorSpacingSize.Large);
 					const embed = new ContainerBuilder()
 						.addTextDisplayComponents(
 							new TextDisplayBuilder().setContent(
 								'## ℹ️ ポモドーロタイマーのデフォルト設定',
 							),
 						)
-						.addSectionComponents(sections);
+						.addSectionComponents(sections.slice(0, 3))
+						.addSeparatorComponents(separator)
+						.addSectionComponents(sections.slice(3, 4))
+						.addSeparatorComponents(separator)
+						.addSectionComponents(sections.slice(4, 6))
+						.addSeparatorComponents(separator)
+						.addSectionComponents(sections.slice(6, 11));
 					// ボタンの準備
 					const button = new ActionRowBuilder().addComponents(
 						new ButtonBuilder()
@@ -255,14 +294,6 @@ module.exports = {
 					return interaction.reply({
 						components: [embed, button],
 						flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
-					});
-
-					serverData.save().then(() => {
-						// データベースの更新が成功した場合
-						return interaction.reply({
-							content:
-								'✅ ポモドーロタイマーのデフォルト設定を初期化しました。',
-						});
 					});
 				});
 			} else if (subcommand === 'panel') {

@@ -40,6 +40,25 @@ const serverSchema = new mongoose.Schema(
 			voiceNotification: {
 				status: { type: Boolean, default: false }, //ボイス通知の有効/無効
 				volume: { type: Number, default: 50 }, //ボイス通知の音量（1-100%）
+				message: {
+					workTime: {
+						type: String,
+						default: '作業時間が始まります。集中して取り組んでください。',
+					}, //作業時間のボイス通知メッセージ
+					breakTime: {
+						type: String,
+						default: '休憩時間が始まります。リラックスして休んでください。',
+					}, //休憩時間のボイス通知メッセージ
+					longBreakTime: {
+						type: String,
+						default:
+							'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
+					}, //長い休憩時間のボイス通知メッセージ
+					stopTime: {
+						type: String,
+						default: 'ポモドーロタイマーが終了しました。お疲れ様でした！',
+					}, //ポモドーロ終了時のボイス通知メッセージ
+				},
 			},
 		},
 	},
