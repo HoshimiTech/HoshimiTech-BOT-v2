@@ -19,7 +19,12 @@ const path = require('path');
 const dirname = require('../lib/defineDirname.js');
 const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 const pomodoroManager = require(path.join(dirname, 'lib/pomodoro/main.js'));
-const pomodoroUtils = require(path.join(dirname, 'lib/pomodoro/utils.js'));
+const pomodoroStateUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroState.js'),
+);
+const pomodoroMessageUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroMessage.js'),
+);
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -251,7 +256,7 @@ module.exports = async (client, interaction) => {
 							});
 						}
 
-						const pomodoroState = await pomodoroUtils.getPomodoroState(
+						const pomodoroState = await pomodoroStateUtils.getPomodoroState(
 							client,
 							interaction.guild.id,
 						);
@@ -274,7 +279,7 @@ module.exports = async (client, interaction) => {
 					}
 					case 'pomodoro_update': {
 						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoroUtils.getPomodoroState(
+						const pomodoroState = await pomodoroStateUtils.getPomodoroState(
 							client,
 							interaction.guild.id,
 						);
@@ -289,7 +294,10 @@ module.exports = async (client, interaction) => {
 						}
 
 						await interaction.deferUpdate();
-						return pomodoroUtils.sendPomodoroStatus(interaction, pomodoroState);
+						return pomodoroMessageUtils.sendPomodoroStatus(
+							interaction,
+							pomodoroState,
+						);
 					}
 					case 'pomodoro_settings_reset': {
 						// 権限チェック
@@ -488,7 +496,7 @@ module.exports = async (client, interaction) => {
 					return interaction.showModal(modal);
 				} else if (interaction?.customId.includes('pomodoro_stop')) {
 					// ポモドーロタイマーの状態取得とステータスの確認
-					const pomodoroState = await pomodoroUtils.getPomodoroState(
+					const pomodoroState = await pomodoroStateUtils.getPomodoroState(
 						client,
 						interaction.guild.id,
 					);
