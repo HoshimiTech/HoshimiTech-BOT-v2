@@ -43,22 +43,21 @@ const serverSchema = new mongoose.Schema(
 				message: {
 					workTime: {
 						type: String,
-						default: '作業時間が始まります。集中して取り組んでください。',
+						default: '',
 					}, //作業時間のボイス通知メッセージ
 					breakTime: {
 						type: String,
-						default: '休憩時間が始まります。リラックスして休んでください。',
+						default: '',
 					}, //休憩時間のボイス通知メッセージ
 					longBreakTime: {
 						type: String,
-						default:
-							'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
+						default: '',
 					}, //長い休憩時間のボイス通知メッセージ
 					stopPomodoro: {
 						type: String,
-						default: 'ポモドーロタイマーが終了しました。お疲れ様でした！',
+						default: '',
 					}, //ポモドーロ終了時のボイス通知メッセージ
-					lastModified: { type: Date, default: null }, //ボイス通知メッセージの最終更新日時
+					lastModified: { type: String, default: null }, //ボイス通知メッセージの最終更新日時（ローカルのJSONと比較するためにString型）
 				},
 			},
 		},

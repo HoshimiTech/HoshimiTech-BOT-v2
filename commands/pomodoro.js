@@ -16,6 +16,9 @@ require('dotenv').config({ quiet: true });
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
 const pomodoro = require(path.join(dirname, 'lib/pomodoro/main.js'));
+const pomodoroVoiceUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroVoice.js'),
+);
 const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = {
@@ -73,6 +76,42 @@ module.exports = {
 						.setMinValue(1)
 						.setMaxValue(100)
 						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('vc_notification_msg_work')
+						.setDescription(
+							'ボイスチャンネルで作業時間の開始を通知する際に流すメッセージを設定します。',
+						)
+						.setMaxLength(50)
+						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('vc_notification_msg_break')
+						.setDescription(
+							'ボイスチャンネルで休憩時間の開始を通知する際に流すメッセージを設定します。',
+						)
+						.setMaxLength(50)
+						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('vc_notification_msg_long_break')
+						.setDescription(
+							'ボイスチャンネルで長い休憩時間の開始を通知する際に流すメッセージを設定します。',
+						)
+						.setMaxLength(50)
+						.setRequired(false),
+				)
+				.addStringOption((option) =>
+					option
+						.setName('vc_notification_msg_stop')
+						.setDescription(
+							'ボイスチャンネルでポモドーロタイマーの終了を通知する際に流すメッセージを設定します。',
+						)
+						.setMaxLength(50)
+						.setRequired(false),
 				),
 		)
 		.addSubcommand((subcommand) =>
@@ -124,6 +163,16 @@ module.exports = {
 				const voiceNotificationVolume = interaction.options.getInteger(
 					'voice_notification_volume',
 				);
+				const voiceNotificationMessage = {
+					workTime: interaction.options.getString('vc_notification_msg_work'),
+					breakTime: interaction.options.getString('vc_notification_msg_break'),
+					longBreakTime: interaction.options.getString(
+						'vc_notification_msg_long_break',
+					),
+					stopPomodoro: interaction.options.getString(
+						'vc_notification_msg_stop',
+					),
+				};
 
 				// ユーザーのVCを取得
 				if (!interaction?.member?.voice?.channelId)
@@ -163,6 +212,7 @@ module.exports = {
 					timesUntilLongBreak,
 					voiceNotification,
 					voiceNotificationVolume,
+					voiceNotificationMessage,
 				});
 			} else if (subcommand === 'pause') {
 				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -194,7 +244,7 @@ module.exports = {
 							void err;
 						});
 
-				serverSchema.findById(interaction.guild.id).then((serverData) => {
+				serverSchema.findById(interaction.guild.id).then(async (serverData) => {
 					const pomodoroSettings = serverData.pomodoro;
 					// 埋め込みの準備
 					const labels = {
@@ -226,27 +276,35 @@ module.exports = {
 						},
 						voiceNotificationMessageWorkTime: {
 							label: '作業時間のボイス通知メッセージ:\n```\nDATA\n```',
-							value:
-								pomodoroSettings.voiceNotification.message.workTime ||
-								'作業時間が始まります。集中して取り組んでください。',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'workTime',
+								{ serverData: serverData },
+							),
 						},
 						voiceNotificationMessageBreakTime: {
 							label: '休憩時間のボイス通知メッセージ:\n```\nDATA\n```',
-							value:
-								pomodoroSettings.voiceNotification.message.breakTime ||
-								'休憩時間が始まります。リラックスして休んでください。',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'breakTime',
+								{ serverData: serverData },
+							),
 						},
 						voiceNotificationMessageLongBreakTime: {
 							label: '長い休憩時間のボイス通知メッセージ:\n```\nDATA\n```',
-							value:
-								pomodoroSettings.voiceNotification.message.longBreakTime ||
-								'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'longBreakTime',
+								{ serverData: serverData },
+							),
 						},
 						voiceNotificationMessageStopPomodoro: {
 							label: 'ポモドーロ終了時のボイス通知メッセージ:\n```\nDATA\n```',
-							value:
-								pomodoroSettings.voiceNotification.message.stopPomodoro ||
-								'ポモドーロタイマーが終了しました。お疲れ様でした！',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'stopPomodoro',
+								{ serverData: serverData },
+							),
 						},
 					};
 					const sections = [];
