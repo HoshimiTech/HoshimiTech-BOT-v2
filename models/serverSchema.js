@@ -54,7 +54,7 @@ const serverSchema = new mongoose.Schema(
 						default:
 							'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
 					}, //長い休憩時間のボイス通知メッセージ
-					stopTime: {
+					stopPomodoro: {
 						type: String,
 						default: 'ポモドーロタイマーが終了しました。お疲れ様でした！',
 					}, //ポモドーロ終了時のボイス通知メッセージ

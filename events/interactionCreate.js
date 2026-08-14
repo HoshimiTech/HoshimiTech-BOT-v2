@@ -255,14 +255,14 @@ module.exports = async (client, interaction) => {
 						);
 						let currentPomodoroSettings;
 						if (pomodoroState.running && !pomodoroState.paused) {
-							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.stopTime}\``;
+							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.stopPomodoro}\``;
 						} else {
 							currentPomodoroSettings =
 								'現在稼働しているポモドーロタイマーはありません。';
 						}
 
 						const embed = new EmbedBuilder().setDescription(
-							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.stopTime}\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.stopPomodoro}\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
 						);
 
 						return interaction.reply({
@@ -329,7 +329,7 @@ module.exports = async (client, interaction) => {
 							'休憩時間が始まります。リラックスして休んでください。';
 						serverData.pomodoro.voiceNotification.message.longBreakTime =
 							'長い休憩時間が始まります。しっかりとリフレッシュしてください。';
-						serverData.pomodoro.voiceNotification.message.stopTime =
+						serverData.pomodoro.voiceNotification.message.stopPomodoro =
 							'ポモドーロタイマーが終了しました。お疲れ様でした！';
 
 						return serverData.save().then(() => {
@@ -391,9 +391,9 @@ module.exports = async (client, interaction) => {
 							label: '長い休憩時間のボイス通知メッセージ',
 							value: pomodoroSettings.voiceNotification.message.longBreakTime,
 						},
-						voiceNotificationMessageStopTime: {
+						voiceNotificationMessageStopPomodoro: {
 							label: 'ポモドーロ終了時のボイス通知メッセージ',
-							value: pomodoroSettings.voiceNotification.message.stopTime,
+							value: pomodoroSettings.voiceNotification.message.stopPomodoro,
 						},
 					};
 
@@ -416,7 +416,7 @@ module.exports = async (client, interaction) => {
 																	'voiceNotificationMessageBreakTime' ||
 															  editType ===
 																	'voiceNotificationMessageLongBreakTime' ||
-															  editType === 'voiceNotificationMessageStopTime'
+															  editType === 'voiceNotificationMessageStopPomodoro'
 															? `現在は「${currentValue}」に設定されています。`
 															: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されています。`,
 											)
@@ -949,7 +949,7 @@ module.exports = async (client, interaction) => {
 						editType === 'voiceNotificationMessageWorkTime' ||
 						editType === 'voiceNotificationMessageBreakTime' ||
 						editType === 'voiceNotificationMessageLongBreakTime' ||
-						editType === 'voiceNotificationMessageStopTime'
+						editType === 'voiceNotificationMessageStopPomodoro'
 					) {
 						if (inputValue.length > 50) {
 							return interaction.reply({
@@ -990,8 +990,8 @@ module.exports = async (client, interaction) => {
 					} else if (editType === 'voiceNotificationMessageLongBreakTime') {
 						serverData.pomodoro.voiceNotification.message.longBreakTime =
 							inputValue;
-					} else if (editType === 'voiceNotificationMessageStopTime') {
-						serverData.pomodoro.voiceNotification.message.stopTime = inputValue;
+					} else if (editType === 'voiceNotificationMessageStopPomodoro') {
+						serverData.pomodoro.voiceNotification.message.stopPomodoro = inputValue;
 					}
 
 					await serverData.save().then(() => {
@@ -1006,7 +1006,7 @@ module.exports = async (client, interaction) => {
 							voiceNotificationMessageBreakTime: '休憩時間の通知メッセージ',
 							voiceNotificationMessageLongBreakTime:
 								'長い休憩時間の通知メッセージ',
-							voiceNotificationMessageStopTime: '停止時間の通知メッセージ',
+							voiceNotificationMessageStopPomodoro: 'ポモドーロタイマー終了時の通知メッセージ',
 						};
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,

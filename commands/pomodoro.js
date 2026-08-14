@@ -240,10 +240,10 @@ module.exports = {
 								pomodoroSettings.voiceNotification.message.longBreakTime ||
 								'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
 						},
-						voiceNotificationMessageStopTime: {
+						voiceNotificationMessageStopPomodoro: {
 							label: 'ポモドーロ終了時のボイス通知メッセージ:\n```\nDATA\n```',
 							value:
-								pomodoroSettings.voiceNotification.message.stopTime ||
+								pomodoroSettings.voiceNotification.message.stopPomodoro ||
 								'ポモドーロタイマーが終了しました。お疲れ様でした！',
 						},
 					};
