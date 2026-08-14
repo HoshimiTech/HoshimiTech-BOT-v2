@@ -58,6 +58,7 @@ const serverSchema = new mongoose.Schema(
 						type: String,
 						default: 'ポモドーロタイマーが終了しました。お疲れ様でした！',
 					}, //ポモドーロ終了時のボイス通知メッセージ
+					lastModified: { type: Date, default: null }, //ボイス通知メッセージの最終更新日時
 				},
 			},
 		},

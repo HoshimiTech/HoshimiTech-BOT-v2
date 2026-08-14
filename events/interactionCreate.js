@@ -15,6 +15,7 @@ const {
 	PermissionsBitField,
 } = require('discord.js');
 const fs = require('fs');
+const path = require('path');
 const serverSchema = require('../models/serverSchema.js');
 const pomodoroManager = require('../lib/pomodoro/main.js');
 const pomodoroUtils = require('../lib/pomodoro/utils.js');
@@ -316,6 +317,31 @@ module.exports = async (client, interaction) => {
 							});
 						}
 
+						// デフォルト以外の通知メッセージが1つでも設定されていた場合は、音声キャッシュを削除
+						const DEFAULT_TEXTS = {
+							workTime: '作業時間が始まります。集中して取り組んでください。',
+							breakTime: '休憩時間が始まります。リラックスして休んでください。',
+							longBreakTime:
+								'長い休憩時間が始まります。しっかりとリフレッシュしてください。',
+							stopPomodoro:
+								'ポモドーロタイマーが終了しました。お疲れ様でした！',
+						};
+						if (
+							serverData.pomodoro.voiceNotification.message.workTime !==
+								DEFAULT_TEXTS.workTime ||
+							serverData.pomodoro.voiceNotification.message.breakTime !==
+								DEFAULT_TEXTS.breakTime ||
+							serverData.pomodoro.voiceNotification.message.longBreakTime !==
+								DEFAULT_TEXTS.longBreakTime ||
+							serverData.pomodoro.voiceNotification.message.stopPomodoro !==
+								DEFAULT_TEXTS.stopPomodoro
+						) {
+							fs.rmSync(
+								path.join(__dirname, `../assets/audio/${interaction.guild.id}`),
+								{ recursive: true, force: true },
+							);
+						}
+
 						// デフォルト設定をリセット
 						serverData.pomodoro.interval.workTime = 25;
 						serverData.pomodoro.interval.breakTime = 5;
@@ -331,6 +357,7 @@ module.exports = async (client, interaction) => {
 							'長い休憩時間が始まります。しっかりとリフレッシュしてください。';
 						serverData.pomodoro.voiceNotification.message.stopPomodoro =
 							'ポモドーロタイマーが終了しました。お疲れ様でした！';
+						serverData.pomodoro.voiceNotification.message.lastModified = null;
 
 						return serverData.save().then(() => {
 							return interaction.reply({
@@ -416,7 +443,8 @@ module.exports = async (client, interaction) => {
 																	'voiceNotificationMessageBreakTime' ||
 															  editType ===
 																	'voiceNotificationMessageLongBreakTime' ||
-															  editType === 'voiceNotificationMessageStopPomodoro'
+															  editType ===
+																	'voiceNotificationMessageStopPomodoro'
 															? `現在は「${currentValue}」に設定されています。`
 															: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されています。`,
 											)
@@ -984,14 +1012,23 @@ module.exports = async (client, interaction) => {
 						serverData.pomodoro.voiceNotification.volume = Number(inputValue);
 					} else if (editType === 'voiceNotificationMessageWorkTime') {
 						serverData.pomodoro.voiceNotification.message.workTime = inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
 					} else if (editType === 'voiceNotificationMessageBreakTime') {
 						serverData.pomodoro.voiceNotification.message.breakTime =
 							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
 					} else if (editType === 'voiceNotificationMessageLongBreakTime') {
 						serverData.pomodoro.voiceNotification.message.longBreakTime =
 							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
 					} else if (editType === 'voiceNotificationMessageStopPomodoro') {
-						serverData.pomodoro.voiceNotification.message.stopPomodoro = inputValue;
+						serverData.pomodoro.voiceNotification.message.stopPomodoro =
+							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
 					}
 
 					await serverData.save().then(() => {
@@ -1006,7 +1043,8 @@ module.exports = async (client, interaction) => {
 							voiceNotificationMessageBreakTime: '休憩時間の通知メッセージ',
 							voiceNotificationMessageLongBreakTime:
 								'長い休憩時間の通知メッセージ',
-							voiceNotificationMessageStopPomodoro: 'ポモドーロタイマー終了時の通知メッセージ',
+							voiceNotificationMessageStopPomodoro:
+								'ポモドーロタイマー終了時の通知メッセージ',
 						};
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,
