@@ -9,9 +9,11 @@ const {
 	EmbedBuilder,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
-const serverSchema = require('../models/serverSchema.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 function checkInput(sendChannel, emoji, emojiCount) {
 	const errList = [];
@@ -207,7 +209,9 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -227,7 +231,9 @@ module.exports = {
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 					});
 			} catch (err) {

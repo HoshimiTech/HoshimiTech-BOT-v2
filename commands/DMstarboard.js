@@ -5,7 +5,9 @@ const {
 	MessageFlags,
 	Locale,
 } = require('discord.js');
-const messageTransport = require('../lib/messageTransport');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const messageTransport = require(path.join(dirname, 'lib/messageTransport.js'));
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()

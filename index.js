@@ -1,5 +1,7 @@
 const fs = require('fs');
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const dirname = require('./lib/defineDirname.js');
+const path = require('path');
 
 const client = new Client({
 	intents: [
@@ -29,10 +31,10 @@ const mongodb_TOKEN = process.env.mongodb_token;
 const PORT = 8000;
 
 ///////////////////////////////////////////////////
-fs.readdir('./events', (_err, files) => {
+fs.readdir(path.join(dirname, 'events'), (_err, files) => {
 	files.forEach((file) => {
 		if (!file.endsWith('.js')) return;
-		const event = require(`./events/${file}`);
+		const event = require(path.join(dirname, 'events', file));
 		const eventName = file.split('.')[0];
 		console.info(`クライアントイベントの読み込みが完了: ${eventName}`);
 
@@ -40,17 +42,17 @@ fs.readdir('./events', (_err, files) => {
 		client.removeAllListeners(eventName);
 		client.on(eventName, event.bind(null, client));
 
-		delete require.cache[require.resolve(`./events/${file}`)];
+		delete require.cache[require.resolve(path.join(dirname, 'events', file))];
 	});
 });
 
 client.commands = [];
-fs.readdir('./commands', (err, files) => {
+fs.readdir(path.join(dirname, 'commands'), (err, files) => {
 	if (err) throw err;
 	files.forEach((f) => {
 		try {
 			if (f.endsWith('.js')) {
-				const props = require(`./commands/${f}`);
+				const props = require(path.join(dirname, 'commands', f));
 				const propsJson = props.data.toJSON();
 				client.commands.push(propsJson);
 				console.info(`コマンドの読み込みが完了: ${propsJson.name}`);
@@ -104,7 +106,9 @@ app.listen(PORT, () => {
 });
 
 // Voicevoxの起動
-const { getVoicevoxExecutablePath } = require('./scripts/voicevoxSetup.js');
+const { getVoicevoxExecutablePath } = require(
+	path.join(dirname, 'scripts/voicevoxSetup.js'),
+);
 
 const cpuThreads =
 	process.env.voicevox_cpu_threads || require('os').cpus().length; // 環境変数から取得、デフォルトはCPUコア数

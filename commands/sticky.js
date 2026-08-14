@@ -9,7 +9,9 @@ const {
 	ButtonStyle,
 	LabelBuilder,
 } = require('discord.js');
-const serverSchema = require('../models/serverSchema.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -100,7 +102,9 @@ module.exports = {
 						await interaction.showModal(modal);
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 					});
 			} else if (subcommand === 'clear') {
@@ -142,7 +146,9 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -162,7 +168,9 @@ module.exports = {
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 
 						const button = new ActionRowBuilder().addComponents(
@@ -199,7 +207,9 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -219,7 +229,9 @@ module.exports = {
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 
 						const button = new ActionRowBuilder().addComponents(
@@ -245,7 +257,9 @@ module.exports = {
 				});
 			}
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

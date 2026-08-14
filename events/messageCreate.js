@@ -1,5 +1,7 @@
 const { MessageFlags, EmbedBuilder } = require('discord.js');
-const serverSchema = require('../models/serverSchema.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = (client, message) => {
 	// botは無視
@@ -79,7 +81,9 @@ module.exports = (client, message) => {
 		})
 		.catch((err) => {
 			// ユーザー側には何も表示せず、裏にログを残す。
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, message, err);
 		});
 };

@@ -1,8 +1,10 @@
 const { REST, Routes, ActivityType } = require('discord.js');
 const os = require('node:os');
 require('dotenv').config({ quiet: true });
-const serverSchema = require('../models/serverSchema.js');
-const pomodoroUtils = require('../lib/pomodoro/utils.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
+const pomodoroUtils = require(path.join(dirname, 'lib/pomodoro/utils.js'));
 const discord_token = process.env.discord_bot_token;
 const consoleChannel = process.env.discord_bot_console;
 const adminUserID = process.env.discord_bot_owner;

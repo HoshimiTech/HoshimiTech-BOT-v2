@@ -10,7 +10,8 @@ const { Readable } = require('stream');
 const execAsync = promisify(exec);
 
 // Constants
-const LIB_DIR = path.resolve(__dirname, '../lib/pomodoro/voicevox');
+const dirname = require('../lib/defineDirname.js');
+const LIB_DIR = path.resolve(dirname, 'lib/pomodoro/voicevox');
 const VOICEVOX_ENGINE_PATH = path.join(
 	LIB_DIR,
 	process.platform === 'win32' ? 'run.exe' : 'run',

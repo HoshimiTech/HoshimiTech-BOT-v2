@@ -7,6 +7,8 @@ const {
 	AttachmentBuilder,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -78,7 +80,9 @@ module.exports = {
 				components: [button],
 			});
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

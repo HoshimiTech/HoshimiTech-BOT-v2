@@ -13,8 +13,10 @@ const {
 	SeparatorSpacingSize,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
-const pomodoro = require('../lib/pomodoro/main.js');
-const serverSchema = require('../models/serverSchema.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const pomodoro = require(path.join(dirname, 'lib/pomodoro/main.js'));
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -325,7 +327,9 @@ module.exports = {
 				return interaction.reply({ embeds: [embed], components: [buttons] });
 			}
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

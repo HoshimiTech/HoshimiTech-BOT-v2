@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const flashcard = require('../lib/flashcard/main.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const flashcard = require(path.join(dirname, 'lib/flashcard/main.js'));
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -277,7 +279,9 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

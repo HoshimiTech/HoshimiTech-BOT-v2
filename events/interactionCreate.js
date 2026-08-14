@@ -16,9 +16,10 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const serverSchema = require('../models/serverSchema.js');
-const pomodoroManager = require('../lib/pomodoro/main.js');
-const pomodoroUtils = require('../lib/pomodoro/utils.js');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
+const pomodoroManager = require(path.join(dirname, 'lib/pomodoro/main.js'));
+const pomodoroUtils = require(path.join(dirname, 'lib/pomodoro/utils.js'));
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -43,10 +44,10 @@ module.exports = async (client, interaction) => {
 		} else {
 			// スラッシュコマンド応答
 			if (interaction?.type === InteractionType.ApplicationCommand) {
-				fs.readdir('./commands', (err, files) => {
+				fs.readdir(path.join(dirname, 'commands'), (err, files) => {
 					if (err) throw err;
 					files.forEach(async (f) => {
-						const props = require(`../commands/${f}`);
+						const props = require(path.join(dirname, 'commands', f));
 						const propsJson = props.data.toJSON();
 
 						//propsJsonがundefinedだった場合は、スラッシュコマンドとして、タイプを1にする
@@ -337,7 +338,7 @@ module.exports = async (client, interaction) => {
 								DEFAULT_TEXTS.stopPomodoro
 						) {
 							fs.rmSync(
-								path.join(__dirname, `../assets/audio/${interaction.guild.id}`),
+								path.join(dirname, `assets/audio/${interaction.guild.id}`),
 								{ recursive: true, force: true },
 							);
 						}
@@ -883,7 +884,9 @@ module.exports = async (client, interaction) => {
 										});
 									})
 									.catch((err) => {
-										const errorNotification = require('../lib/errorNotification.js');
+										const errorNotification = require(
+											path.join(dirname, 'lib/errorNotification.js'),
+										);
 										errorNotification(client, interaction, err);
 
 										const button = new ActionRowBuilder().addComponents(
@@ -903,7 +906,9 @@ module.exports = async (client, interaction) => {
 									});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -1096,7 +1101,9 @@ module.exports = async (client, interaction) => {
 			}
 		}
 	} catch (err) {
-		const errorNotification = require('../lib/errorNotification.js');
+		const errorNotification = require(
+			path.join(dirname, 'lib/errorNotification.js'),
+		);
 		errorNotification(client, interaction, err);
 	}
 };
