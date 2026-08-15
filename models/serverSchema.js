@@ -59,6 +59,7 @@ const serverSchema = new mongoose.Schema(
 					}, //ポモドーロ終了時のボイス通知メッセージ
 					lastModified: { type: String, default: null }, //ボイス通知メッセージの最終更新日時（ローカルのJSONと比較するためにString型）
 				},
+				speakerId: { type: Number, default: 3 }, //ボイス通知の話者ID（デフォルトは3:ずんだもん）
 			},
 		},
 	},

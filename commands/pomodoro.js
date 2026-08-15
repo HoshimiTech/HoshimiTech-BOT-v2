@@ -19,6 +19,9 @@ const pomodoro = require(path.join(dirname, 'lib/pomodoro/main.js'));
 const pomodoroVoiceUtils = require(
 	path.join(dirname, 'lib/pomodoro/utils/pomodoroVoice.js'),
 );
+const voicevoxAudioController = require(
+	path.join(dirname, 'lib/pomodoro/voicevoxAudioController.js'),
+);
 const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = {
@@ -112,6 +115,15 @@ module.exports = {
 						)
 						.setMaxLength(50)
 						.setRequired(false),
+				)
+				.addIntegerOption((option) =>
+					option
+						.setName('voice_notification_speaker_id')
+						.setDescription(
+							'ボイスチャンネルでの通知に使用する話者を設定します。',
+						)
+						.setAutocomplete(true)
+						.setRequired(false),
 				),
 		)
 		.addSubcommand((subcommand) =>
@@ -145,6 +157,11 @@ module.exports = {
 			subcommand
 				.setName('panel')
 				.setDescription('ポモドーロタイマーの操作パネルを表示します。'),
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('speakers')
+				.setDescription('ボイス通知に使用できる話者の一覧を表示します。'),
 		),
 
 	run: async (client, interaction) => {
@@ -173,6 +190,9 @@ module.exports = {
 						'vc_notification_msg_stop',
 					),
 				};
+				const voiceNotificationSpeakerId = interaction.options.getInteger(
+					'voice_notification_speaker_id',
+				);
 
 				// ユーザーのVCを取得
 				if (!interaction?.member?.voice?.channelId)
@@ -213,6 +233,7 @@ module.exports = {
 					voiceNotification,
 					voiceNotificationVolume,
 					voiceNotificationMessage,
+					voiceNotificationSpeakerId,
 				});
 			} else if (subcommand === 'pause') {
 				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -246,6 +267,10 @@ module.exports = {
 
 				serverSchema.findById(interaction.guild.id).then(async (serverData) => {
 					const pomodoroSettings = serverData.pomodoro;
+					const speakerData = await voicevoxAudioController.getSpeakerName(
+						pomodoroSettings.voiceNotification.speakerId,
+					);
+
 					// 埋め込みの準備
 					const labels = {
 						workTime: {
@@ -305,6 +330,10 @@ module.exports = {
 								'stopPomodoro',
 								{ serverData: serverData },
 							),
+						},
+						voiceNotificationSpeakerId: {
+							label: 'ボイス通知の話者ID:\n```\nDATA\n```',
+							value: `${speakerData.name} (ID: ${speakerData.id})`,
 						},
 					};
 					const sections = [];
@@ -383,6 +412,16 @@ module.exports = {
 						.setStyle(ButtonStyle.Secondary),
 				);
 				return interaction.reply({ embeds: [embed], components: [buttons] });
+			} else if (subcommand === 'speakers') {
+				const speakerList = await voicevoxAudioController.getSpeakerName();
+				const embed = new EmbedBuilder()
+					.setTitle('🎤 ボイス通知に使用できる話者の一覧')
+					.setDescription(
+						speakerList
+							.map((speaker) => `- ${speaker.name} (ID: ${speaker.id})`)
+							.join('\n'),
+					);
+				return interaction.reply({ embeds: [embed] });
 			}
 		} catch (err) {
 			const errorNotification = require(

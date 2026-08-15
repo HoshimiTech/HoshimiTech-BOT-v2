@@ -28,6 +28,9 @@ const pomodoroMessageUtils = require(
 const pomodoroVoiceUtils = require(
 	path.join(dirname, 'lib/pomodoro/utils/pomodoroVoice.js'),
 );
+const voicevoxAudioController = require(
+	path.join(dirname, 'lib/pomodoro/voicevoxAudioController.js'),
+);
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -263,16 +266,25 @@ module.exports = async (client, interaction) => {
 							client,
 							interaction.guild.id,
 						);
+						const speakerData = await voicevoxAudioController.getSpeakerName(
+							pomodoroState.config?.options?.voiceNotificationSpeakerId,
+						);
 						let currentPomodoroSettings;
 						if (pomodoroState.running && !pomodoroState.paused) {
-							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.stopPomodoro}\``;
+							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.stopPomodoro}\`\n- **ボイス通知の話者:** \`${speakerData.name} (ID: ${speakerData.id})\``;
 						} else {
 							currentPomodoroSettings =
 								'現在稼働しているポモドーロタイマーはありません。';
 						}
 
+						const serverSpeakerData =
+							await voicevoxAudioController.getSpeakerName(
+								serverData.pomodoro.voiceNotification.speakerId !== null
+									? serverData.pomodoro.voiceNotification.speakerId
+									: 3,
+							);
 						const embed = new EmbedBuilder().setDescription(
-							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${serverData.pomodoro.voiceNotification.message.stopPomodoro}\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'workTime', { serverData: serverData })}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'breakTime', { serverData: serverData })}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'longBreakTime', { serverData: serverData })}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'stopPomodoro', { serverData: serverData })}\`\n- **ボイス通知の話者:** \`${serverSpeakerData.name} (ID: ${serverSpeakerData.id})\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
 						);
 
 						return interaction.reply({
@@ -329,12 +341,14 @@ module.exports = async (client, interaction) => {
 							});
 						}
 
-						// デフォルト以外の通知メッセージが1つでも設定されていた場合は、音声キャッシュを削除
+						// デフォルト以外の通知メッセージが1つでも設定されていた場合および、話者IDがデフォルト以外の場合は、音声キャッシュを削除
+						// 話者IDがデフォルト以外の場合も削除する理由は、話者を変更した場合、以前の話者で生成された音声ファイルが残っている可能性が高いため
 						if (
 							!serverData.pomodoro.voiceNotification.message.workTime ||
 							!serverData.pomodoro.voiceNotification.message.breakTime ||
 							!serverData.pomodoro.voiceNotification.message.longBreakTime ||
-							!serverData.pomodoro.voiceNotification.message.stopPomodoro
+							!serverData.pomodoro.voiceNotification.message.stopPomodoro ||
+							serverData.pomodoro.voiceNotification.speakerId !== 3
 						) {
 							fs.rmSync(
 								path.join(dirname, `assets/audio/${interaction.guild.id}`),
@@ -354,6 +368,7 @@ module.exports = async (client, interaction) => {
 						serverData.pomodoro.voiceNotification.message.longBreakTime = '';
 						serverData.pomodoro.voiceNotification.message.stopPomodoro = '';
 						serverData.pomodoro.voiceNotification.message.lastModified = null;
+						serverData.pomodoro.voiceNotification.speakerId = 3;
 
 						return serverData.save().then(() => {
 							return interaction.reply({
@@ -371,6 +386,10 @@ module.exports = async (client, interaction) => {
 					// 現在のデフォルト設定の取得
 					const serverData = await serverSchema.findById(interaction.guild.id);
 					const pomodoroSettings = serverData.pomodoro;
+					const serverSpeakerData =
+						await voicevoxAudioController.getSpeakerName(
+							pomodoroSettings.voiceNotification.speakerId,
+						);
 
 					// 編集タイプの取得
 					const customId = interaction.customId;
@@ -434,66 +453,78 @@ module.exports = async (client, interaction) => {
 								{ serverData: serverData },
 							),
 						},
+						voiceNotificationSpeakerId: {
+							label: 'ボイス通知の話者ID',
+							value: serverSpeakerData.id,
+						},
 					};
 
 					const currentValue = labels[editType].value;
-					const modal =
-						editType !== 'voiceNotificationStatus'
-							? new ModalBuilder()
-									.setCustomId(`pomodoro_settings_editModal_${editType}`)
-									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
-									.setLabelComponents(
-										new LabelBuilder()
-											.setLabel(labels[editType].label)
-											.setDescription(
-												editType === 'voiceNotificationVolume'
-													? `単位を付けずに0から100までの整数で入力してください。現在は ${currentValue}%に設定されています。`
-													: editType === 'timesUntilLongBreak'
-														? `単位を付けずに0以上の整数で入力してください。現在は ${currentValue}回に設定されています。`
-														: editType === 'voiceNotificationMessageWorkTime' ||
-															  editType ===
-																	'voiceNotificationMessageBreakTime' ||
-															  editType ===
-																	'voiceNotificationMessageLongBreakTime' ||
-															  editType ===
-																	'voiceNotificationMessageStopPomodoro'
-															? `現在は「${currentValue}」に設定されています。何も入力せずに送信した場合、BOTのデフォルトの文章にリセットされます。`
-															: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されています。`,
-											)
-											.setTextInputComponent(
-												new TextInputBuilder()
-													.setCustomId(`${editType}_input`)
-													.setStyle(TextInputStyle.Short)
-													.setValue(currentValue.toString())
-													.setRequired(false),
-											),
-									)
-							: new ModalBuilder()
-									.setCustomId(`pomodoro_settings_editModal_${editType}`)
-									.setTitle('ポモドーロタイマーのデフォルト設定の編集')
-									.setLabelComponents(
-										new LabelBuilder()
-											.setLabel(labels[editType].label)
-											.setDescription(
-												`現在は ${currentValue ? '通知する' : '通知しない'} に設定されています。`,
-											)
-											.setStringSelectMenuComponent(
-												new StringSelectMenuBuilder()
-													.setCustomId(`${editType}_input`)
-													.setOptions(
-														new StringSelectMenuOptionBuilder()
-															.setLabel('通知する')
-															.setValue('true')
-															.setEmoji('✅')
-															.setDefault(currentValue === true),
-														new StringSelectMenuOptionBuilder()
-															.setLabel('通知しない')
-															.setValue('false')
-															.setEmoji('❌')
-															.setDefault(currentValue === false),
-													),
-											),
-									);
+					const descriptionList = {
+						interval: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されいます。`,
+						timesUntilLongBreak: `単位を付けずに0以上の整数で入力してください。現在は ${currentValue}回に設定されています。`,
+						voiceNotificationVolume: `単位を付けずに0から100までの整数で入力してください。現在は ${currentValue}%に設定されています。`,
+						voiceNotificationMessage: `現在は「${currentValue}」に設定されています。何も入力せずに送信した場合、BOTのデフォルトのメッセージにリセットされます。`,
+						voiceNotificationSpeakerId: `現在は「${serverSpeakerData.name} (ID: ${serverSpeakerData.id})」に設定されています。設定は話者IDの数字のみを指定してください。話者IDは/pomodoro speakersで確認できます。`,
+					};
+					let description = '';
+					if (
+						editType === 'timesUntilLongBreak' ||
+						editType === 'voiceNotificationVolume' ||
+						editType === 'voiceNotificationSpeakerId'
+					) {
+						description = descriptionList[editType];
+					} else if (
+						editType === 'workTime' ||
+						editType === 'breakTime' ||
+						editType === 'longBreakTime'
+					) {
+						description = descriptionList.interval;
+					} else {
+						description = descriptionList.voiceNotificationMessage;
+					}
+
+					const modal = new ModalBuilder()
+						.setCustomId(`pomodoro_settings_editModal_${editType}`)
+						.setTitle('ポモドーロタイマーのデフォルト設定の編集');
+					if (editType === 'voiceNotificationStatus') {
+						modal.setLabelComponents(
+							new LabelBuilder()
+								.setLabel(labels[editType].label)
+								.setDescription(
+									`現在は ${currentValue ? '通知する' : '通知しない'} に設定されています。`,
+								)
+								.setStringSelectMenuComponent(
+									new StringSelectMenuBuilder()
+										.setCustomId(`${editType}_input`)
+										.setOptions(
+											new StringSelectMenuOptionBuilder()
+												.setLabel('通知する')
+												.setValue('true')
+												.setEmoji('✅')
+												.setDefault(currentValue === true),
+											new StringSelectMenuOptionBuilder()
+												.setLabel('通知しない')
+												.setValue('false')
+												.setEmoji('❌')
+												.setDefault(currentValue === false),
+										),
+								),
+						);
+					} else {
+						modal.setLabelComponents(
+							new LabelBuilder()
+								.setLabel(labels[editType].label)
+								.setDescription(description)
+								.setTextInputComponent(
+									new TextInputBuilder()
+										.setCustomId(`${editType}_input`)
+										.setStyle(TextInputStyle.Short)
+										.setValue(currentValue.toString())
+										.setRequired(false),
+								),
+						);
+					}
 
 					// モーダルの表示
 					return interaction.showModal(modal);
@@ -1001,6 +1032,17 @@ module.exports = async (client, interaction) => {
 								flags: MessageFlags.Ephemeral,
 							});
 						}
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						const speakerInfo = await voicevoxAudioController.getSpeakerName(
+							Number(inputValue),
+						);
+						if (!speakerInfo) {
+							return interaction.reply({
+								content:
+									'❌ 入力値が不正です。正しい話者IDを入力してください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
 					}
 
 					// 入力値の保存
@@ -1045,6 +1087,9 @@ module.exports = async (client, interaction) => {
 							inputValue;
 						serverData.pomodoro.voiceNotification.message.lastModified =
 							new Date().toISOString();
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						serverData.pomodoro.voiceNotification.speakerId =
+							inputValue || inputValue === 0 ? Number(inputValue) : null;
 					}
 
 					await serverData.save().then(() => {
@@ -1061,6 +1106,8 @@ module.exports = async (client, interaction) => {
 								'長い休憩時間の通知メッセージ',
 							voiceNotificationMessageStopPomodoro:
 								'ポモドーロタイマー終了時の通知メッセージ',
+							voiceNotificationSpeakerId:
+								'ボイスチャンネルでの通知に使用する話者ID',
 						};
 						return interaction.reply({
 							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,
@@ -1107,6 +1154,30 @@ module.exports = async (client, interaction) => {
 							// TODO:オートコンプリートの候補を送信
 						}
 						break;
+					}
+					case 'pomodoro': {
+						if (subcommand === 'start') {
+							// ポモドーロタイマーの設定のオートコンプリート
+							const speakers = await voicevoxAudioController.getSpeakerName();
+							const choices = speakers.map((speaker) => {
+								return {
+									name: `${speaker.name} (ID: ${speaker.id})`,
+									value: speaker.id.toString(),
+								};
+							});
+
+							// 入力内容を取得
+							const focusedValue = interaction.options.getFocused();
+							// 入力内容に基づいて候補をフィルタリング
+							const filteredChoices = choices.filter((choice) =>
+								choice.name.toLowerCase().includes(focusedValue.toLowerCase()),
+							);
+							return interaction.respond(
+								filteredChoices.length > 25
+									? filteredChoices.slice(0, 25)
+									: filteredChoices,
+							);
+						}
 					}
 				}
 			}
