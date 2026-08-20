@@ -383,16 +383,6 @@ module.exports = async (client, interaction) => {
 				}
 
 				if (interaction?.customId.startsWith('pomodoro_settings_edit')) {
-					// 現在のデフォルト設定の取得
-					const serverData = await serverSchema.findById(interaction.guild.id);
-					const pomodoroSettings = serverData.pomodoro;
-					const serverSpeakerData =
-						await voicevoxAudioController.getSpeakerInfo(
-							pomodoroSettings.voiceNotification.speakerId !== null
-								? pomodoroSettings.voiceNotification.speakerId
-								: 3,
-						);
-
 					// 編集タイプの取得
 					const customId = interaction.customId;
 					const editType = customId.split('_').slice(3).join('_');
@@ -467,13 +457,11 @@ module.exports = async (client, interaction) => {
 						timesUntilLongBreak: `単位を付けずに0以上の整数で入力してください。現在は ${currentValue}回に設定されています。`,
 						voiceNotificationVolume: `単位を付けずに0から100までの整数で入力してください。現在は ${currentValue}%に設定されています。`,
 						voiceNotificationMessage: `現在は「${currentValue}」に設定されています。何も入力せずに送信した場合、BOTのデフォルトのメッセージにリセットされます。`,
-						voiceNotificationSpeakerId: `現在は「${serverSpeakerData.name} (ID: ${serverSpeakerData.id})」に設定されています。設定は話者IDの数字のみを指定してください。話者IDは/pomodoro speakersで確認できます。`,
 					};
 					let description = '';
 					if (
 						editType === 'timesUntilLongBreak' ||
-						editType === 'voiceNotificationVolume' ||
-						editType === 'voiceNotificationSpeakerId'
+						editType === 'voiceNotificationVolume'
 					) {
 						description = descriptionList[editType];
 					} else if (
@@ -482,6 +470,19 @@ module.exports = async (client, interaction) => {
 						editType === 'longBreakTime'
 					) {
 						description = descriptionList.interval;
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						const serverData = await serverSchema.findById(
+							interaction.guild.id,
+						);
+						const pomodoroSettings = serverData.pomodoro;
+						const serverSpeakerData =
+							await voicevoxAudioController.getSpeakerInfo(
+								pomodoroSettings.voiceNotification.speakerId !== null
+									? pomodoroSettings.voiceNotification.speakerId
+									: 3,
+							);
+
+						description = `現在は「${serverSpeakerData.name} (ID: ${serverSpeakerData.id})」に設定されています。設定は話者IDの数字のみを指定してください。話者IDは/pomodoro speakersで確認できます。`;
 					} else {
 						description = descriptionList.voiceNotificationMessage;
 					}
