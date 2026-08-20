@@ -454,7 +454,7 @@ module.exports = async (client, interaction) => {
 					const currentValue = labels[editType].value;
 					const descriptionList = {
 						interval: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されいます。`,
-						timesUntilLongBreak: `単位を付けずに0以上の整数で入力してください。現在は ${currentValue}回に設定されています。`,
+						timesUntilLongBreak: `単位を付けずに1以上の整数で入力してください。1に設定すると作業時間と長い休憩時間が交互に実行されます。現在は ${currentValue}回に設定されています。`,
 						voiceNotificationVolume: `単位を付けずに0から100までの整数で入力してください。現在は ${currentValue}%に設定されています。`,
 						voiceNotificationMessage: `現在は「${currentValue}」に設定されています。何も入力せずに送信した場合、BOTのデフォルトのメッセージにリセットされます。`,
 					};
@@ -995,10 +995,10 @@ module.exports = async (client, interaction) => {
 						});
 					} else if (
 						editType === 'timesUntilLongBreak' &&
-						(isNaN(inputValue) || inputValue < 0)
+						(isNaN(inputValue) || inputValue < 1)
 					) {
 						return interaction.reply({
-							content: '❌ 入力値が不正です。0以上の数値を入力してください。',
+							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
 							flags: MessageFlags.Ephemeral,
 						});
 					} else if (
