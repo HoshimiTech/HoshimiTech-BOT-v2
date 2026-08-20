@@ -387,6 +387,10 @@ module.exports = async (client, interaction) => {
 					const customId = interaction.customId;
 					const editType = customId.split('_').slice(3).join('_');
 
+					// サーバー設定の取得
+					const serverData = await serverSchema.findById(interaction.guild.id);
+					const pomodoroSettings = serverData.pomodoro;
+
 					// モーダルの作成
 					const labels = {
 						workTime: {
@@ -445,10 +449,6 @@ module.exports = async (client, interaction) => {
 								{ serverData: serverData },
 							),
 						},
-						voiceNotificationSpeakerId: {
-							label: 'ボイス通知の話者ID',
-							value: serverSpeakerData.id,
-						},
 					};
 
 					const currentValue = labels[editType].value;
@@ -471,10 +471,6 @@ module.exports = async (client, interaction) => {
 					) {
 						description = descriptionList.interval;
 					} else if (editType === 'voiceNotificationSpeakerId') {
-						const serverData = await serverSchema.findById(
-							interaction.guild.id,
-						);
-						const pomodoroSettings = serverData.pomodoro;
 						const serverSpeakerData =
 							await voicevoxAudioController.getSpeakerInfo(
 								pomodoroSettings.voiceNotification.speakerId !== null
