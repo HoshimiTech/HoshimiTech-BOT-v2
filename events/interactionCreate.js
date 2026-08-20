@@ -266,7 +266,7 @@ module.exports = async (client, interaction) => {
 							client,
 							interaction.guild.id,
 						);
-						const speakerData = await voicevoxAudioController.getSpeakerName(
+						const speakerData = await voicevoxAudioController.getSpeakerInfo(
 							pomodoroState.config?.options?.voiceNotificationSpeakerId,
 						);
 						let currentPomodoroSettings;
@@ -278,7 +278,7 @@ module.exports = async (client, interaction) => {
 						}
 
 						const serverSpeakerData =
-							await voicevoxAudioController.getSpeakerName(
+							await voicevoxAudioController.getSpeakerInfo(
 								serverData.pomodoro.voiceNotification.speakerId !== null
 									? serverData.pomodoro.voiceNotification.speakerId
 									: 3,
@@ -387,8 +387,10 @@ module.exports = async (client, interaction) => {
 					const serverData = await serverSchema.findById(interaction.guild.id);
 					const pomodoroSettings = serverData.pomodoro;
 					const serverSpeakerData =
-						await voicevoxAudioController.getSpeakerName(
-							pomodoroSettings.voiceNotification.speakerId,
+						await voicevoxAudioController.getSpeakerInfo(
+							pomodoroSettings.voiceNotification.speakerId !== null
+								? pomodoroSettings.voiceNotification.speakerId
+								: 3,
 						);
 
 					// 編集タイプの取得
@@ -1033,7 +1035,7 @@ module.exports = async (client, interaction) => {
 							});
 						}
 					} else if (editType === 'voiceNotificationSpeakerId') {
-						const speakerInfo = await voicevoxAudioController.getSpeakerName(
+						const speakerInfo = await voicevoxAudioController.getSpeakerInfo(
 							Number(inputValue),
 						);
 						if (!speakerInfo) {
@@ -1158,7 +1160,7 @@ module.exports = async (client, interaction) => {
 					case 'pomodoro': {
 						if (subcommand === 'start') {
 							// ポモドーロタイマーの設定のオートコンプリート
-							const speakers = await voicevoxAudioController.getSpeakerName();
+							const speakers = await voicevoxAudioController.getSpeakerInfo();
 							const choices = speakers.map((speaker) => {
 								return {
 									name: `${speaker.name} (ID: ${speaker.id})`,

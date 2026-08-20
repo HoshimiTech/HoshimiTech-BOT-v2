@@ -267,8 +267,10 @@ module.exports = {
 
 				serverSchema.findById(interaction.guild.id).then(async (serverData) => {
 					const pomodoroSettings = serverData.pomodoro;
-					const speakerData = await voicevoxAudioController.getSpeakerName(
-						pomodoroSettings.voiceNotification.speakerId,
+					const speakerData = await voicevoxAudioController.getSpeakerInfo(
+						pomodoroSettings.voiceNotification.speakerId !== null
+							? pomodoroSettings.voiceNotification.speakerId
+							: 3,
 					);
 
 					// 埋め込みの準備
@@ -413,7 +415,7 @@ module.exports = {
 				);
 				return interaction.reply({ embeds: [embed], components: [buttons] });
 			} else if (subcommand === 'speakers') {
-				const speakerList = await voicevoxAudioController.getSpeakerName();
+				const speakerList = await voicevoxAudioController.getSpeakerInfo();
 				const embed = new EmbedBuilder()
 					.setTitle('🎤 ボイス通知に使用できる話者の一覧')
 					.setDescription(
