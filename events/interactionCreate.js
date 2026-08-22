@@ -583,7 +583,7 @@ module.exports = async (client, interaction) => {
 									throw new Error(err.message || String(err), { cause: err });
 								})
 								.then(async () => {
-									await interaction.reply('✅　登録しました。');
+									await interaction.reply('✅ 登録しました。');
 								});
 						} else {
 							await interaction.reply({
@@ -599,7 +599,7 @@ module.exports = async (client, interaction) => {
 							serverSchema
 								.deleteOne({ _id: id })
 								.then(async () => {
-									await interaction.reply('✅　登録を解除しました。');
+									await interaction.reply('✅ 登録を解除しました。');
 								})
 								.catch(async (err) => {
 									await interaction.reply(
