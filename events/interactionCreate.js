@@ -344,10 +344,10 @@ module.exports = async (client, interaction) => {
 						// デフォルト以外の通知メッセージが1つでも設定されていた場合および、話者IDがデフォルト以外の場合は、音声キャッシュを削除
 						// 話者IDがデフォルト以外の場合も削除する理由は、話者を変更した場合、以前の話者で生成された音声ファイルが残っている可能性が高いため
 						if (
-							!serverData.pomodoro.voiceNotification.message.workTime ||
-							!serverData.pomodoro.voiceNotification.message.breakTime ||
-							!serverData.pomodoro.voiceNotification.message.longBreakTime ||
-							!serverData.pomodoro.voiceNotification.message.stopPomodoro ||
+							serverData.pomodoro.voiceNotification.message.workTime ||
+							serverData.pomodoro.voiceNotification.message.breakTime ||
+							serverData.pomodoro.voiceNotification.message.longBreakTime ||
+							serverData.pomodoro.voiceNotification.message.stopPomodoro ||
 							serverData.pomodoro.voiceNotification.speakerId !== 3
 						) {
 							fs.rmSync(
