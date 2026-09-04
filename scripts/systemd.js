@@ -3,7 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const serviceName = 'hoshimitech-bot.service';
-const repoRoot = path.resolve(__dirname, '..');
+const projectRoot = path.resolve(__dirname, '..');
 const workingDirectory = path.join(__dirname, 'systemd');
 const templatePath = path.join(__dirname, 'systemd', serviceName);
 const targetPath = path.join('/etc', 'systemd', 'system', serviceName);
@@ -30,7 +30,7 @@ function renderServiceDefinition() {
 	const template = fs.readFileSync(templatePath, 'utf8');
 	return template
 		.replace('{{WORKING_DIRECTORY}}', workingDirectory)
-		.replace('{{PROJECT_ROOT}}', repoRoot);
+		.replace('{{PROJECT_ROOT}}', projectRoot);
 }
 
 function syncInstalledServiceDefinition() {
