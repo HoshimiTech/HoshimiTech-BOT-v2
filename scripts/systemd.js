@@ -4,7 +4,8 @@ const { execFileSync } = require('child_process');
 
 const serviceName = 'hoshimitech-bot.service';
 const projectRoot = path.resolve(__dirname, '..');
-const workingDirectory = path.join(__dirname, 'systemd');
+const composeDirectory = projectRoot;
+
 const templatePath = path.join(__dirname, 'systemd', serviceName);
 const targetPath = path.join('/etc', 'systemd', 'system', serviceName);
 
@@ -14,23 +15,44 @@ function isInstalled() {
 
 function guidanceForInstallFirst() {
 	console.error(
-		`The service is not installed yet. Run: sudo npm run prod:install`,
+		'The service is not installed yet. Run: sudo npm run prod:install',
 	);
 }
 
 function ensureRoot() {
 	if (typeof process.getuid === 'function' && process.getuid() !== 0) {
 		throw new Error(
-			'systemd registration requires root privileges. Run this command with sudo.',
+			'systemd management requires root privileges. Run this command with sudo.',
 		);
+	}
+}
+
+function commandExists(command) {
+	try {
+		execFileSync('which', [command], {
+			stdio: 'ignore',
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function ensureDependencies() {
+	if (!commandExists('systemctl')) {
+		throw new Error('systemctl was not found.');
+	}
+
+	if (!commandExists('docker')) {
+		throw new Error('docker was not found.');
 	}
 }
 
 function renderServiceDefinition() {
 	const template = fs.readFileSync(templatePath, 'utf8');
 	return template
-		.replace('{{WORKING_DIRECTORY}}', workingDirectory)
-		.replace('{{PROJECT_ROOT}}', projectRoot);
+		.replaceAll('{{PROJECT_ROOT}}', projectRoot)
+		.replaceAll('{{COMPOSE_DIRECTORY}}', composeDirectory);
 }
 
 function syncInstalledServiceDefinition() {
@@ -41,88 +63,75 @@ function syncInstalledServiceDefinition() {
 
 	if (current !== rendered) {
 		fs.writeFileSync(targetPath, rendered, 'utf8');
-		execFileSync('systemctl', ['daemon-reload'], { stdio: 'inherit' });
+
+		console.log('systemd service definition updated.');
+
+		execFileSync('systemctl', ['daemon-reload'], {
+			stdio: 'inherit',
+		});
 	}
 }
 
 function install() {
 	ensureRoot();
-
-	if (isInstalled()) {
-		syncInstalledServiceDefinition();
-		console.log(
-			`The service is already installed. Start it with: sudo npm run prod:start`,
-		);
-		return;
-	}
+	ensureDependencies();
 
 	const rendered = renderServiceDefinition();
 
-	fs.writeFileSync(targetPath, rendered, 'utf8');
-	execFileSync('systemctl', ['daemon-reload'], { stdio: 'inherit' });
-	execFileSync('systemctl', ['enable', serviceName], { stdio: 'inherit' });
-	console.log(
-		`Installation completed. Start the service with: sudo npm run prod:start`,
-	);
-}
+	if (isInstalled()) {
+		if (fs.readFileSync(targetPath, 'utf8') !== rendered) {
+			fs.writeFileSync(targetPath, rendered, 'utf8');
 
-function uninstall() {
-	ensureRoot();
+			execFileSync('systemctl', ['daemon-reload'], {
+				stdio: 'inherit',
+			});
 
-	if (!isInstalled()) {
-		console.log(
-			`The service is already uninstalled. Install first with: sudo npm run prod:install`,
-		);
+			console.log('systemd service definition updated.');
+		}
+
+		console.log('The service is already installed.');
+
+		console.log('Start it with: sudo npm run prod:start');
+
 		return;
 	}
 
-	try {
-		execFileSync('systemctl', ['disable', '--now', serviceName], {
-			stdio: 'inherit',
-		});
-	} catch (_error) {
-		void _error;
-		// The service may already be stopped or not installed.
-	}
+	fs.writeFileSync(targetPath, rendered, 'utf8');
 
-	if (fs.existsSync(targetPath)) {
-		fs.unlinkSync(targetPath);
-	}
+	execFileSync('systemctl', ['daemon-reload'], {
+		stdio: 'inherit',
+	});
 
-	execFileSync('systemctl', ['daemon-reload'], { stdio: 'inherit' });
+	execFileSync('systemctl', ['enable', serviceName], {
+		stdio: 'inherit',
+	});
+
+	console.log('Installation completed.');
+	console.log('Start the service with: sudo npm run prod:start');
 }
 
 function start() {
 	ensureRoot();
+	ensureDependencies();
+
 	if (!isInstalled()) {
 		guidanceForInstallFirst();
 		process.exit(1);
 	}
 	syncInstalledServiceDefinition();
 
-	console.log(
-		'Starting the service... (wait a few seconds for the bot to initialize)',
-	);
-	execFileSync('systemctl', ['start', '--now', serviceName], {
+	console.log('Starting the service...');
+
+	execFileSync('systemctl', ['start', serviceName], {
 		stdio: 'inherit',
 	});
 	console.log('Service started successfully.');
-	console.log(`Following logs for ${serviceName}...`);
-	console.log(
-		'Press Ctrl+C to stop viewing logs. The service will continue running.',
-	);
-
-	execFileSync(
-		'journalctl',
-		['-u', serviceName, '-f', '-n', '0', '--no-pager'],
-		{
-			stdio: 'inherit',
-		},
-	);
 }
 
 function stop() {
 	ensureRoot();
+	ensureDependencies();
+
 	if (!isInstalled()) {
 		guidanceForInstallFirst();
 		process.exit(1);
@@ -130,33 +139,130 @@ function stop() {
 	syncInstalledServiceDefinition();
 
 	console.log('Stopping the service...');
-	execFileSync('systemctl', ['stop', serviceName], {
+
+	try {
+		execFileSync('systemctl', ['stop', serviceName], {
+			stdio: 'inherit',
+		});
+	} catch (error) {
+		console.error('Failed to stop the systemd service.');
+		throw error;
+	}
+
+	console.log('Removing Docker containers, images, networks, and volumes...');
+
+	/*
+	 * Composeプロジェクトに関連するリソースだけを削除する。
+	 *
+	 * --rmi all
+	 *   Composeで使用しているイメージを削除
+	 *
+	 * --volumes
+	 *   Composeで作成したVolumeを削除
+	 *
+	 * --remove-orphans
+	 *   compose.ymlから外された孤立コンテナも削除
+	 */
+	execFileSync(
+		'docker',
+		['compose', 'down', '--rmi', 'all', '--volumes', '--remove-orphans'],
+		{
+			cwd: composeDirectory,
+			stdio: 'inherit',
+		},
+	);
+
+	console.log('Service stopped and Docker resources cleaned up.');
+}
+
+function uninstall() {
+	ensureRoot();
+	ensureDependencies();
+
+	if (!isInstalled()) {
+		console.log('The service is already uninstalled.');
+		return;
+	}
+
+	console.log('Stopping and disabling the service...');
+
+	try {
+		execFileSync('systemctl', ['disable', '--now', serviceName], {
+			stdio: 'inherit',
+		});
+	} catch {
+		/*
+		 * 既に停止・disable済みの場合など。
+		 * 後続のファイル削除は続行する。
+		 */
+	}
+
+	/*
+	 * systemctl disable --now だけでは
+	 * DockerのイメージやVolumeなどは削除されないため、
+	 * uninstallでもComposeリソースを削除する。
+	 */
+	console.log('Removing Docker resources...');
+
+	try {
+		execFileSync(
+			'docker',
+			['compose', 'down', '--rmi', 'all', '--volumes', '--remove-orphans'],
+			{
+				cwd: composeDirectory,
+				stdio: 'inherit',
+			},
+		);
+	} catch {
+		console.warn(
+			'Failed to clean up Docker resources. Continuing uninstall...',
+		);
+	}
+
+	console.log('Removing systemd service...');
+
+	if (fs.existsSync(targetPath)) {
+		fs.unlinkSync(targetPath);
+	}
+
+	execFileSync('systemctl', ['daemon-reload'], {
 		stdio: 'inherit',
 	});
-	console.log('Service stopped successfully.Clearing Docker cache...');
-	execFileSync('docker', ['system', 'prune', '--volumes'], {
-		stdio: 'inherit',
-	});
-	console.log('Service stopped successfully and Docker cache cleared.');
+
+	console.log('Uninstallation completed.');
 }
 
 const command = process.argv[2];
 
-try {
-	if (command === 'install') {
-		install();
-	} else if (command === 'uninstall') {
-		uninstall();
-	} else if (command === 'start') {
-		start();
-	} else if (command === 'stop') {
-		stop();
-	} else {
-		throw new Error(
-			'Usage: node scripts/systemd.js <install|uninstall|start|stop>',
-		);
+async function main() {
+	try {
+		switch (command) {
+			case 'install':
+				install();
+				break;
+
+			case 'start':
+				start();
+				break;
+
+			case 'stop':
+				stop();
+				break;
+
+			case 'uninstall':
+				uninstall();
+				break;
+
+			default:
+				throw new Error(
+					'Usage: node scripts/systemd.js <install|start|stop|uninstall>',
+				);
+		}
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+
+		process.exit(1);
 	}
-} catch (error) {
-	console.error(error.message);
-	process.exit(1);
 }
+
+main();
