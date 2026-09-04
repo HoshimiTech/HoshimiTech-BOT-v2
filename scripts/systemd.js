@@ -50,9 +50,17 @@ function ensureDependencies() {
 
 function renderServiceDefinition() {
 	const template = fs.readFileSync(templatePath, 'utf8');
-	return template
+	const rendered = template
 		.replaceAll('{{PROJECT_ROOT}}', projectRoot)
 		.replaceAll('{{COMPOSE_DIRECTORY}}', composeDirectory);
+
+	if (/{{[^}]+}}/.test(rendered)) {
+		throw new Error(
+			`Unresolved placeholder found in ${templatePath}. Check the systemd service template.`,
+		);
+	}
+
+	return rendered;
 }
 
 function syncInstalledServiceDefinition() {
@@ -234,7 +242,7 @@ function uninstall() {
 
 const command = process.argv[2];
 
-async function main() {
+function main() {
 	try {
 		switch (command) {
 			case 'install':
