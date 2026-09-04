@@ -990,7 +990,9 @@ module.exports = async (client, interaction) => {
 						(editType === 'workTime' ||
 							editType === 'breakTime' ||
 							editType === 'longBreakTime') &&
-						(isNaN(inputValue) || inputValue < 1)
+						(!Number.isFinite(Number(inputValue)) ||
+							!Number.isInteger(Number(inputValue)) ||
+							inputValue < 1)
 					) {
 						return interaction.reply({
 							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
@@ -998,7 +1000,9 @@ module.exports = async (client, interaction) => {
 						});
 					} else if (
 						editType === 'timesUntilLongBreak' &&
-						(isNaN(inputValue) || inputValue < 1)
+						(!Number.isFinite(Number(inputValue)) ||
+							!Number.isInteger(Number(inputValue)) ||
+							inputValue < 1)
 					) {
 						return interaction.reply({
 							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
