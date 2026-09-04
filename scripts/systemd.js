@@ -4,8 +4,8 @@ const { execFileSync } = require('child_process');
 
 const serviceName = 'hoshimitech-bot.service';
 const repoRoot = path.resolve(__dirname, '..');
-const workingDirectory = path.join(repoRoot, 'systemd');
-const templatePath = path.join(repoRoot, 'systemd', serviceName);
+const workingDirectory = path.join(__dirname, 'systemd');
+const templatePath = path.join(__dirname, 'systemd', serviceName);
 const targetPath = path.join('/etc', 'systemd', 'system', serviceName);
 
 function isInstalled() {
