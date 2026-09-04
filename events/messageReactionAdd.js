@@ -4,8 +4,10 @@ const {
 	ButtonStyle,
 	MessageFlags,
 } = require('discord.js');
-const serverSchema = require('../models/serverSchema.js');
-const messageTransport = require('../lib/messageTransport.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
+const messageTransport = require(path.join(dirname, 'lib/messageTransport.js'));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
 
@@ -78,7 +80,7 @@ module.exports = async (client, reaction, user) => {
 			);
 			await reaction.message.reply({
 				content:
-					'メッセージリアクション受信時に、DB取得エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+					'❌ メッセージリアクション受信時に、DB取得エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 				components: [button],
 				flags: MessageFlags.Ephemeral,
 			});

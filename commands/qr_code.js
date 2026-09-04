@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const QRCode = require('qrcode');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -31,7 +33,7 @@ module.exports = {
 			QRCode.toBuffer(QRValue, (err, buffer) => {
 				if (err)
 					return interaction.editReply(
-						'QRコード生成時にエラーが発生しました。時間を空けて再度お試ししただき、同様の問題が発生する場合はサポートサーバーまでお問い合わせください。',
+						'❌ QRコード生成時にエラーが発生しました。時間を空けて再度お試ししただき、同様の問題が発生する場合はサポートサーバーまでお問い合わせください。',
 					);
 
 				return interaction.editReply({
@@ -39,7 +41,9 @@ module.exports = {
 				});
 			});
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

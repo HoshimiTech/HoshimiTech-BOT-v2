@@ -2,6 +2,7 @@ const {
 	InteractionType,
 	ApplicationCommandType,
 	ModalBuilder,
+	LabelBuilder,
 	TextInputBuilder,
 	TextInputStyle,
 	ActionRowBuilder,
@@ -9,13 +10,27 @@ const {
 	ButtonStyle,
 	ButtonBuilder,
 	MessageFlags,
-	LabelBuilder,
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
+	PermissionsBitField,
 } = require('discord.js');
 const fs = require('fs');
-const serverSchema = require('../models/serverSchema.js');
-const pomodoro = require('../lib/pomodoro/main.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
+const pomodoroManager = require(path.join(dirname, 'lib/pomodoro/main.js'));
+const pomodoroStateUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroState.js'),
+);
+const pomodoroMessageUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroMessage.js'),
+);
+const pomodoroVoiceUtils = require(
+	path.join(dirname, 'lib/pomodoro/utils/pomodoroVoice.js'),
+);
+const voicevoxAudioController = require(
+	path.join(dirname, 'lib/pomodoro/voicevoxAudioController.js'),
+);
 const fetch = (...args) =>
 	import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
@@ -40,10 +55,10 @@ module.exports = async (client, interaction) => {
 		} else {
 			// スラッシュコマンド応答
 			if (interaction?.type === InteractionType.ApplicationCommand) {
-				fs.readdir('./commands', (err, files) => {
+				fs.readdir(path.join(dirname, 'commands'), (err, files) => {
 					if (err) throw err;
 					files.forEach(async (f) => {
-						const props = require(`../commands/${f}`);
+						const props = require(path.join(dirname, 'commands', f));
 						const propsJson = props.data.toJSON();
 
 						//propsJsonがundefinedだった場合は、スラッシュコマンドとして、タイプを1にする
@@ -189,13 +204,101 @@ module.exports = async (client, interaction) => {
 						);
 						return interaction.showModal(modal);
 					}
-					case 'pomodoro_update': {
-						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoro.getPomodoroState(
+					case 'pomodoro_start': {
+						// ユーザーのVCを取得
+						if (!interaction?.member?.voice?.channelId)
+							return interaction
+								?.reply({
+									content:
+										'❌ ボイスチャンネルに接続してから実行してください。',
+									flags: MessageFlags.Ephemeral,
+								})
+								.catch((err) => {
+									// 送信失敗は無視
+									void err;
+								});
+						const guild_me = interaction?.guild?.members?.cache?.get(
+							client?.user?.id,
+						);
+						if (guild_me?.voice?.channelId) {
+							if (
+								guild_me?.voice?.channelId !==
+								interaction?.member?.voice?.channelId
+							) {
+								return interaction
+									?.reply({
+										content: '❌ BOTと同じボイスチャンネルに接続してください。',
+										flags: MessageFlags.Ephemeral,
+									})
+									.catch((err) => {
+										// 送信失敗は無視
+										void err;
+									});
+							}
+						}
+
+						// ポモドーロタイマー開始
+						return pomodoroManager.start(client, interaction);
+					}
+					case 'pomodoro_pause': {
+						await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+						return pomodoroManager.pause(client, interaction);
+					}
+					case 'pomodoro_resume': {
+						await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+						return pomodoroManager.resume(client, interaction);
+					}
+					case 'pomodoro_settings_show': {
+						const serverData = await serverSchema.findById(
+							interaction.guild.id,
+						);
+						if (!serverData) {
+							return interaction.reply({
+								content:
+									'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						const pomodoroState = await pomodoroStateUtils.getPomodoroState(
 							client,
 							interaction.guild.id,
 						);
-						if (!pomodoroState.running) {
+						const speakerData = await voicevoxAudioController.getSpeakerInfo(
+							pomodoroState.config?.options?.voiceNotificationSpeakerId,
+						);
+						let currentPomodoroSettings;
+						if (pomodoroState.running && !pomodoroState.paused) {
+							currentPomodoroSettings = `- **作業時間:** \`${pomodoroState.config.options.workTime}\` 分\n- **休憩時間:** \`${pomodoroState.config.options.breakTime}\` 分\n- **長い休憩時間:** \`${pomodoroState.config.options.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${pomodoroState.config.options.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${pomodoroState.config.options.voiceNotification ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${pomodoroState.config.options.voiceNotificationVolume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.workTime}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.breakTime}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.longBreakTime}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${pomodoroState.config.options.voiceNotificationMessage.stopPomodoro}\`\n- **ボイス通知の話者:** \`${speakerData.name} (ID: ${speakerData.id})\``;
+						} else {
+							currentPomodoroSettings =
+								'現在稼働しているポモドーロタイマーはありません。';
+						}
+
+						const serverSpeakerData =
+							await voicevoxAudioController.getSpeakerInfo(
+								serverData.pomodoro.voiceNotification.speakerId !== null
+									? serverData.pomodoro.voiceNotification.speakerId
+									: 3,
+							);
+						const embed = new EmbedBuilder().setDescription(
+							`# このサーバーのデフォルト設定\n- **作業時間:** \`${serverData.pomodoro.interval.workTime}\` 分\n- **休憩時間:** \`${serverData.pomodoro.interval.breakTime}\` 分\n- **長い休憩時間:** \`${serverData.pomodoro.interval.longBreakTime}\` 分\n- **長い休憩までの回数:** \`${serverData.pomodoro.timesUntilLongBreak}\` 回\n- **ボイスチャンネルでの音声による通知:** \`${serverData.pomodoro.voiceNotification.status ? '通知する' : '通知しない'}\`\n- **ボイスチャンネルでの通知の際の音量:** \`${serverData.pomodoro.voiceNotification.volume}\` %\n- **作業時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'workTime', { serverData: serverData })}\`\n- **休憩時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'breakTime', { serverData: serverData })}\`\n- **長い休憩時間開始時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'longBreakTime', { serverData: serverData })}\`\n- **ポモドーロ終了時のボイス通知メッセージ:** \`${await pomodoroVoiceUtils.getVoiceNotificationMessage(interaction.guild.id, 'stopPomodoro', { serverData: serverData })}\`\n- **ボイス通知の話者:** \`${serverSpeakerData.name} (ID: ${serverSpeakerData.id})\`\n\n# 現在稼働中の設定\n${currentPomodoroSettings}`,
+						);
+
+						return interaction.reply({
+							embeds: [embed],
+							flags: MessageFlags.Ephemeral,
+						});
+					}
+					case 'pomodoro_update': {
+						// ポモドーロタイマーの状態取得とステータスの確認
+						const pomodoroState = await pomodoroStateUtils.getPomodoroState(
+							client,
+							interaction.guild.id,
+						);
+						if (!pomodoroState.running && !pomodoroState.paused) {
 							await interaction.message.edit({
 								content: '❌ ポモドーロタイマーが実行されていません。',
 								embeds: [],
@@ -206,15 +309,240 @@ module.exports = async (client, interaction) => {
 						}
 
 						await interaction.deferUpdate();
-						return pomodoro.sendPomodoroStatus(interaction, pomodoroState);
+						return pomodoroMessageUtils.sendPomodoroStatus(
+							interaction,
+							pomodoroState,
+						);
 					}
-					case 'pomodoro_stop': {
-						// ポモドーロタイマーの状態取得とステータスの確認
-						const pomodoroState = await pomodoro.getPomodoroState(
-							client,
+					case 'pomodoro_settings_reset': {
+						// 権限チェック
+						if (
+							!interaction.member.permissions.has(
+								PermissionsBitField.Flags.ManageGuild,
+							)
+						) {
+							return interaction.reply({
+								content:
+									'❌ このコマンドを実行する権限がありません。このコマンドを実行するためには「サーバー管理」権限が必要です。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						// 現在の設定を取得
+						const serverData = await serverSchema.findById(
 							interaction.guild.id,
 						);
-						if (!pomodoroState.running) {
+
+						if (!serverData || !serverData.pomodoro) {
+							return interaction.reply({
+								content:
+									'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+
+						// デフォルト以外の通知メッセージが1つでも設定されていた場合および、話者IDがデフォルト以外の場合は、音声キャッシュを削除
+						// 話者IDがデフォルト以外の場合も削除する理由は、話者を変更した場合、以前の話者で生成された音声ファイルが残っている可能性が高いため
+						if (
+							serverData.pomodoro.voiceNotification.message.workTime ||
+							serverData.pomodoro.voiceNotification.message.breakTime ||
+							serverData.pomodoro.voiceNotification.message.longBreakTime ||
+							serverData.pomodoro.voiceNotification.message.stopPomodoro ||
+							serverData.pomodoro.voiceNotification.speakerId !== 3
+						) {
+							fs.rmSync(
+								path.join(dirname, `assets/audio/${interaction.guild.id}`),
+								{ recursive: true, force: true },
+							);
+						}
+
+						// デフォルト設定をリセット
+						serverData.pomodoro.interval.workTime = 25;
+						serverData.pomodoro.interval.breakTime = 5;
+						serverData.pomodoro.interval.longBreakTime = 15;
+						serverData.pomodoro.timesUntilLongBreak = 4;
+						serverData.pomodoro.voiceNotification.status = false;
+						serverData.pomodoro.voiceNotification.volume = 50;
+						serverData.pomodoro.voiceNotification.message.workTime = '';
+						serverData.pomodoro.voiceNotification.message.breakTime = '';
+						serverData.pomodoro.voiceNotification.message.longBreakTime = '';
+						serverData.pomodoro.voiceNotification.message.stopPomodoro = '';
+						serverData.pomodoro.voiceNotification.message.lastModified = null;
+						serverData.pomodoro.voiceNotification.speakerId = 3;
+
+						return serverData.save().then(() => {
+							return interaction.reply({
+								content:
+									'✅ ポモドーロタイマーのデフォルト設定をリセットしました。',
+							});
+						});
+					}
+					case 'cancel': {
+						return interaction.message.delete();
+					}
+				}
+
+				if (interaction?.customId.startsWith('pomodoro_settings_edit')) {
+					// 編集タイプの取得
+					const customId = interaction.customId;
+					const editType = customId.split('_').slice(3).join('_');
+
+					// サーバー設定の取得
+					const serverData = await serverSchema.findById(interaction.guild.id);
+					const pomodoroSettings = serverData.pomodoro;
+
+					// モーダルの作成
+					const labels = {
+						workTime: {
+							label: '作業時間 (分)',
+							value: pomodoroSettings.interval.workTime,
+						},
+						breakTime: {
+							label: '休憩時間 (分)',
+							value: pomodoroSettings.interval.breakTime,
+						},
+						longBreakTime: {
+							label: '長い休憩時間 (分)',
+							value: pomodoroSettings.interval.longBreakTime,
+						},
+						timesUntilLongBreak: {
+							label: '長い休憩までの回数',
+							value: pomodoroSettings.timesUntilLongBreak,
+						},
+						voiceNotificationStatus: {
+							label: 'ボイスチャンネルでの音声による通知',
+							value: pomodoroSettings.voiceNotification.status,
+						},
+						voiceNotificationVolume: {
+							label: 'ボイスチャンネルでの通知の際の音量 (0-100%)',
+							value: pomodoroSettings.voiceNotification.volume,
+						},
+						voiceNotificationMessageWorkTime: {
+							label: '作業時間のボイス通知メッセージ',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'workTime',
+								{ serverData: serverData },
+							),
+						},
+						voiceNotificationMessageBreakTime: {
+							label: '休憩時間のボイス通知メッセージ',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'breakTime',
+								{ serverData: serverData },
+							),
+						},
+						voiceNotificationMessageLongBreakTime: {
+							label: '長い休憩時間のボイス通知メッセージ',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'longBreakTime',
+								{ serverData: serverData },
+							),
+						},
+						voiceNotificationMessageStopPomodoro: {
+							label: 'ポモドーロ終了時のボイス通知メッセージ',
+							value: await pomodoroVoiceUtils.getVoiceNotificationMessage(
+								interaction.guild.id,
+								'stopPomodoro',
+								{ serverData: serverData },
+							),
+						},
+						voiceNotificationSpeakerId: {
+							label: 'ボイス通知の話者ID',
+							value:
+								pomodoroSettings.voiceNotification.speakerId !== null
+									? pomodoroSettings.voiceNotification.speakerId
+									: 3,
+						},
+					};
+
+					const currentValue = labels[editType].value;
+					const descriptionList = {
+						interval: `単位を付けずに1以上の整数で入力してください。現在は ${currentValue}分に設定されいます。`,
+						timesUntilLongBreak: `単位を付けずに1以上の整数で入力してください。1に設定すると作業時間と長い休憩時間が交互に実行されます。現在は ${currentValue}回に設定されています。`,
+						voiceNotificationVolume: `単位を付けずに0から100までの整数で入力してください。現在は ${currentValue}%に設定されています。`,
+						voiceNotificationMessage: `現在は「${currentValue}」に設定されています。何も入力せずに送信した場合、BOTのデフォルトのメッセージにリセットされます。`,
+					};
+					let description = '';
+					if (
+						editType === 'timesUntilLongBreak' ||
+						editType === 'voiceNotificationVolume'
+					) {
+						description = descriptionList[editType];
+					} else if (
+						editType === 'workTime' ||
+						editType === 'breakTime' ||
+						editType === 'longBreakTime'
+					) {
+						description = descriptionList.interval;
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						const serverSpeakerData =
+							await voicevoxAudioController.getSpeakerInfo(currentValue);
+
+						description = `現在は「${serverSpeakerData.name} (ID: ${serverSpeakerData.id})」に設定されています。設定は話者IDの数字のみを指定してください。話者IDは/pomodoro speakersで確認できます。`;
+					} else {
+						description = descriptionList.voiceNotificationMessage;
+					}
+
+					const modal = new ModalBuilder()
+						.setCustomId(`pomodoro_settings_editModal_${editType}`)
+						.setTitle('ポモドーロタイマーのデフォルト設定の編集');
+					if (editType === 'voiceNotificationStatus') {
+						modal.addLabelComponents(
+							new LabelBuilder()
+								.setLabel(labels[editType].label)
+								.setDescription(
+									`現在は ${currentValue ? '通知する' : '通知しない'} に設定されています。`,
+								)
+								.setStringSelectMenuComponent(
+									new StringSelectMenuBuilder()
+										.setCustomId(`${editType}_input`)
+										.setOptions(
+											new StringSelectMenuOptionBuilder()
+												.setLabel('通知する')
+												.setValue('true')
+												.setEmoji('✅')
+												.setDefault(currentValue === true),
+											new StringSelectMenuOptionBuilder()
+												.setLabel('通知しない')
+												.setValue('false')
+												.setEmoji('❌')
+												.setDefault(currentValue === false),
+										),
+								),
+						);
+					} else {
+						modal.addLabelComponents(
+							new LabelBuilder()
+								.setLabel(labels[editType].label)
+								.setDescription(description)
+								.setTextInputComponent(
+									new TextInputBuilder()
+										.setCustomId(`${editType}_input`)
+										.setStyle(TextInputStyle.Short)
+										.setValue(currentValue.toString())
+										.setRequired(false),
+								),
+						);
+					}
+
+					// モーダルの表示
+					return interaction.showModal(modal);
+				} else if (interaction?.customId.includes('pomodoro_stop')) {
+					// ポモドーロタイマーの状態取得とステータスの確認
+					const pomodoroState = await pomodoroStateUtils.getPomodoroState(
+						client,
+						interaction.guild.id,
+					);
+					if (!pomodoroState.running && !pomodoroState.paused) {
+						if (interaction.customId === 'pomodoro_stop_from_panel') {
+							return interaction.reply({
+								content: '❌ ポモドーロタイマーが実行されていません。',
+								flags: MessageFlags.Ephemeral,
+							});
+						} else {
 							await interaction.message.edit({
 								content: '❌ ポモドーロタイマーが実行されていません。',
 								embeds: [],
@@ -223,12 +551,9 @@ module.exports = async (client, interaction) => {
 							});
 							return interaction.deferUpdate();
 						}
+					}
 
-						return pomodoro.stop(client, interaction);
-					}
-					case 'cancel': {
-						return interaction.message.delete();
-					}
+					return pomodoroManager.stop(client, interaction);
 				}
 			}
 
@@ -261,7 +586,7 @@ module.exports = async (client, interaction) => {
 									throw new Error(err.message || String(err), { cause: err });
 								})
 								.then(async () => {
-									await interaction.reply('✅　登録しました。');
+									await interaction.reply('✅ 登録しました。');
 								});
 						} else {
 							await interaction.reply({
@@ -277,7 +602,7 @@ module.exports = async (client, interaction) => {
 							serverSchema
 								.deleteOne({ _id: id })
 								.then(async () => {
-									await interaction.reply('✅　登録を解除しました。');
+									await interaction.reply('✅ 登録を解除しました。');
 								})
 								.catch(async (err) => {
 									await interaction.reply(
@@ -356,7 +681,7 @@ module.exports = async (client, interaction) => {
 							let page = 0;
 							const maxPage = Math.ceil(guilds.length / 10) - 1;
 							const embed = new EmbedBuilder()
-								.setTitle(`${guilds.length}サーバーに所属中`)
+								.setTitle(`ℹ️ ${guilds.length}サーバーに所属中`)
 								.setDescription(
 									guilds
 										.slice(page * 10, page * 10 + 10)
@@ -486,7 +811,7 @@ module.exports = async (client, interaction) => {
 									serverData[variable_name] = variable_value;
 									await serverData.save().then(() => {
 										console.log(
-											`${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
+											`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
 										);
 
 										return interaction.reply('done');
@@ -506,12 +831,14 @@ module.exports = async (client, interaction) => {
 										serverData[variable_name] = undefined;
 
 										serverData.save().then(() => {
-											console.info('updated!');
+											console.info(
+												`✅ ${guild_id} is updated as this!\n${JSON.stringify(serverData)}`,
+											);
 										});
 									});
 								}
 
-								return interaction.reply('done');
+								return interaction.reply('✅ done');
 							});
 						} else {
 							console.log(how_to);
@@ -575,7 +902,7 @@ module.exports = async (client, interaction) => {
 								if (serverData.sticky.channels.find((c) => c._id === channelId))
 									return interaction.reply({
 										content:
-											'このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
+											'❌ このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
 										flags: MessageFlags.Ephemeral,
 									});
 
@@ -596,12 +923,14 @@ module.exports = async (client, interaction) => {
 									.then(() => {
 										return interaction.reply({
 											content:
-												'メッセージ固定の作成に成功しました。\n解除する場合は`/sticky clear`コマンドを利用してください。',
+												'✅ メッセージ固定の作成に成功しました。\n解除する場合は`/sticky clear`コマンドを利用してください。',
 											flags: MessageFlags.Ephemeral,
 										});
 									})
 									.catch((err) => {
-										const errorNotification = require('../lib/errorNotification.js');
+										const errorNotification = require(
+											path.join(dirname, 'lib/errorNotification.js'),
+										);
 										errorNotification(client, interaction, err);
 
 										const button = new ActionRowBuilder().addComponents(
@@ -614,14 +943,16 @@ module.exports = async (client, interaction) => {
 										);
 										return interaction.reply({
 											content:
-												'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+												'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 											components: [button],
 											flags: MessageFlags.Ephemeral,
 										});
 									});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -634,12 +965,161 @@ module.exports = async (client, interaction) => {
 								);
 								return interaction.reply({
 									content:
-										'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+										'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 									components: [button],
 									flags: MessageFlags.Ephemeral,
 								});
 							});
 					}
+				}
+
+				// ポモドーロタイマーのモーダル応答
+				if (interaction?.customId.startsWith('pomodoro_settings_editModal')) {
+					const editType = interaction.customId.split('_').slice(3).join('_');
+
+					// 入力値の取得
+					const inputValue =
+						editType !== 'voiceNotificationStatus'
+							? interaction.fields.getTextInputValue(`${editType}_input`)
+							: interaction.fields.getStringSelectValues(
+									`${editType}_input`,
+								)[0];
+
+					// 入力値の検証
+					if (
+						(editType === 'workTime' ||
+							editType === 'breakTime' ||
+							editType === 'longBreakTime') &&
+						(!Number.isFinite(Number(inputValue)) ||
+							!Number.isInteger(Number(inputValue)) ||
+							inputValue < 1)
+					) {
+						return interaction.reply({
+							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'timesUntilLongBreak' &&
+						(!Number.isFinite(Number(inputValue)) ||
+							!Number.isInteger(Number(inputValue)) ||
+							inputValue < 1)
+					) {
+						return interaction.reply({
+							content: '❌ 入力値が不正です。1以上の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'voiceNotificationStatus' &&
+						!(inputValue === 'true' || inputValue === 'false')
+					) {
+						return interaction.reply({
+							content:
+								'❌ 入力値が不正です。正しく選択肢から選択している事を確認してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'voiceNotificationVolume' &&
+						(isNaN(inputValue) || inputValue <= 0 || inputValue > 100)
+					) {
+						return interaction.reply({
+							content:
+								'❌ 入力値が不正です。1以上100以下の数値を入力してください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					} else if (
+						editType === 'voiceNotificationMessageWorkTime' ||
+						editType === 'voiceNotificationMessageBreakTime' ||
+						editType === 'voiceNotificationMessageLongBreakTime' ||
+						editType === 'voiceNotificationMessageStopPomodoro'
+					) {
+						if (inputValue.length > 50) {
+							return interaction.reply({
+								content: '❌ 入力値が不正です。50文字以内で入力してください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						const speakerInfo = await voicevoxAudioController.getSpeakerInfo(
+							Number(inputValue),
+						);
+						if (!speakerInfo) {
+							return interaction.reply({
+								content:
+									'❌ 入力値が不正です。正しい話者IDを入力してください。',
+								flags: MessageFlags.Ephemeral,
+							});
+						}
+					}
+
+					// 入力値の保存
+					const serverData = await serverSchema.findById(interaction.guild.id);
+					if (!serverData) {
+						return interaction.reply({
+							content:
+								'❌ このサーバーは登録されていません。BOTを一度kickして再度招待した上で、再度お試しください。',
+							flags: MessageFlags.Ephemeral,
+						});
+					}
+
+					if (editType === 'workTime') {
+						serverData.pomodoro.interval.workTime = Number(inputValue);
+					} else if (editType === 'breakTime') {
+						serverData.pomodoro.interval.breakTime = Number(inputValue);
+					} else if (editType === 'longBreakTime') {
+						serverData.pomodoro.interval.longBreakTime = Number(inputValue);
+					} else if (editType === 'timesUntilLongBreak') {
+						serverData.pomodoro.timesUntilLongBreak = Number(inputValue);
+					} else if (editType === 'voiceNotificationStatus') {
+						serverData.pomodoro.voiceNotification.status =
+							inputValue === 'true';
+					} else if (editType === 'voiceNotificationVolume') {
+						serverData.pomodoro.voiceNotification.volume = Number(inputValue);
+					} else if (editType === 'voiceNotificationMessageWorkTime') {
+						serverData.pomodoro.voiceNotification.message.workTime = inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
+					} else if (editType === 'voiceNotificationMessageBreakTime') {
+						serverData.pomodoro.voiceNotification.message.breakTime =
+							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
+					} else if (editType === 'voiceNotificationMessageLongBreakTime') {
+						serverData.pomodoro.voiceNotification.message.longBreakTime =
+							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
+					} else if (editType === 'voiceNotificationMessageStopPomodoro') {
+						serverData.pomodoro.voiceNotification.message.stopPomodoro =
+							inputValue;
+						serverData.pomodoro.voiceNotification.message.lastModified =
+							new Date().toISOString();
+					} else if (editType === 'voiceNotificationSpeakerId') {
+						serverData.pomodoro.voiceNotification.speakerId =
+							inputValue || inputValue === 0 ? Number(inputValue) : null;
+					}
+
+					await serverData.save().then(() => {
+						const label = {
+							workTime: '作業時間',
+							breakTime: '休憩時間',
+							longBreakTime: '長い休憩時間',
+							timesUntilLongBreak: '長い休憩までの回数',
+							voiceNotificationStatus: 'ボイスチャンネルでの音声による通知',
+							voiceNotificationVolume: 'ボイスチャンネルでの通知の際の音量',
+							voiceNotificationMessageWorkTime: '作業時間の通知メッセージ',
+							voiceNotificationMessageBreakTime: '休憩時間の通知メッセージ',
+							voiceNotificationMessageLongBreakTime:
+								'長い休憩時間の通知メッセージ',
+							voiceNotificationMessageStopPomodoro:
+								'ポモドーロタイマー終了時の通知メッセージ',
+							voiceNotificationSpeakerId:
+								'ボイスチャンネルでの通知に使用する話者ID',
+						};
+						return interaction.reply({
+							content: `✅ ポモドーロタイマーのデフォルト設定「${label[editType]}」を更新しました。`,
+							flags: MessageFlags.Ephemeral,
+						});
+					});
 				}
 			}
 
@@ -681,11 +1161,37 @@ module.exports = async (client, interaction) => {
 						}
 						break;
 					}
+					case 'pomodoro': {
+						if (subcommand === 'start') {
+							// ポモドーロタイマーの設定のオートコンプリート
+							const speakers = await voicevoxAudioController.getSpeakerInfo();
+							const choices = speakers.map((speaker) => {
+								return {
+									name: `${speaker.name} (ID: ${speaker.id})`,
+									value: speaker.id.toString(),
+								};
+							});
+
+							// 入力内容を取得
+							const focusedValue = interaction.options.getFocused();
+							// 入力内容に基づいて候補をフィルタリング
+							const filteredChoices = choices.filter((choice) =>
+								choice.name.toLowerCase().includes(focusedValue.toLowerCase()),
+							);
+							return interaction.respond(
+								filteredChoices.length > 25
+									? filteredChoices.slice(0, 25)
+									: filteredChoices,
+							);
+						}
+					}
 				}
 			}
 		}
 	} catch (err) {
-		const errorNotification = require('../lib/errorNotification.js');
+		const errorNotification = require(
+			path.join(dirname, 'lib/errorNotification.js'),
+		);
 		errorNotification(client, interaction, err);
 	}
 };

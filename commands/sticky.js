@@ -9,7 +9,9 @@ const {
 	ButtonStyle,
 	LabelBuilder,
 } = require('discord.js');
-const serverSchema = require('../models/serverSchema.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -48,7 +50,7 @@ module.exports = {
 						)
 							return interaction.reply({
 								content:
-									'このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
+									'❌ このチャンネルで既にピン留めが有効になっています。\n一度`/sticky clear`を実行してピン留めを解除してから再度お試しください。',
 								flags: MessageFlags.Ephemeral,
 							});
 
@@ -100,7 +102,9 @@ module.exports = {
 						await interaction.showModal(modal);
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 					});
 			} else if (subcommand === 'clear') {
@@ -142,7 +146,9 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -155,14 +161,16 @@ module.exports = {
 								);
 								return interaction.reply({
 									content:
-										'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+										'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 									components: [button],
 									flags: MessageFlags.Ephemeral,
 								});
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 
 						const button = new ActionRowBuilder().addComponents(
@@ -175,7 +183,7 @@ module.exports = {
 						);
 						return interaction.reply({
 							content:
-								'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+								'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 							components: [button],
 							flags: MessageFlags.Ephemeral,
 						});
@@ -194,12 +202,14 @@ module.exports = {
 							.then(() => {
 								return interaction.reply({
 									content:
-										'全チャンネルで有効な固定メッセージの削除に成功しました。\nなお、このコマンドを使用した場合はメッセージの自動削除が行われませんので、不要な場合はご自身で削除してください。',
+										'✅ 全チャンネルで有効な固定メッセージの削除に成功しました。\nなお、このコマンドを使用した場合はメッセージの自動削除が行われませんので、不要な場合はご自身で削除してください。',
 									flags: MessageFlags.Ephemeral,
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -212,14 +222,16 @@ module.exports = {
 								);
 								return interaction.reply({
 									content:
-										'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+										'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 									components: [button],
 									flags: MessageFlags.Ephemeral,
 								});
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 
 						const button = new ActionRowBuilder().addComponents(
@@ -232,7 +244,7 @@ module.exports = {
 						);
 						return interaction.reply({
 							content:
-								'ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+								'❌ ピン留め作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 							components: [button],
 							flags: MessageFlags.Ephemeral,
 						});
@@ -240,12 +252,14 @@ module.exports = {
 			} else {
 				await interaction.reply({
 					content:
-						'意図していないサブコマンドを検知しました。お手数ですがサポートサーバーまでお問い合わせください。',
+						'❌ 意図していないサブコマンドを検知しました。お手数ですがサポートサーバーまでお問い合わせください。',
 					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

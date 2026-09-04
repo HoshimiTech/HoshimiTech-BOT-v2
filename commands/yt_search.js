@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const ytsr = require('@distube/ytsr');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -54,7 +56,7 @@ module.exports = {
 							}
 
 							const embed = new EmbedBuilder()
-								.setTitle(`「${keyword}」の検索結果`)
+								.setTitle(`ℹ️ 「${keyword}」の検索結果`)
 								.addFields({
 									name: 'プレイリスト',
 									value: playlistDescription.join('\n'),
@@ -72,7 +74,9 @@ module.exports = {
 				},
 			);
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

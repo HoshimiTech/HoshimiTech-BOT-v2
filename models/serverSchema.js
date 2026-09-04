@@ -31,12 +31,36 @@ const serverSchema = new mongoose.Schema(
 			transportedMessages: [{ type: String }],
 		},
 		pomodoro: {
-			defaultWorkTime: { type: Number, default: 25 }, //デフォルトの作業時間（分）
-			defaultBreakTime: { type: Number, default: 5 }, //デフォルトの休憩時間（分）
-			defaultLongBreakTime: { type: Number, default: 15 }, //デフォルトの長い休憩時間（分）
-			defaultCycleCount: { type: Number, default: 4 }, //デフォルトのポモドーロセッションの回数
-			defaultVoiceNotification: { type: Boolean, default: false }, //ボイス通知の有効/無効
-			defaultVoiceNotificationVolume: { type: Number, default: 50 }, //ボイス通知の音量（1-100%）
+			interval: {
+				workTime: { type: Number, default: 25 }, //デフォルトの作業時間（分）
+				breakTime: { type: Number, default: 5 }, //デフォルトの休憩時間（分）
+				longBreakTime: { type: Number, default: 15 }, //デフォルトの長い休憩時間（分）
+			},
+			timesUntilLongBreak: { type: Number, default: 4 }, //デフォルトの長い休憩までの回数
+			voiceNotification: {
+				status: { type: Boolean, default: false }, //ボイス通知の有効/無効
+				volume: { type: Number, default: 50 }, //ボイス通知の音量（1-100%）
+				message: {
+					workTime: {
+						type: String,
+						default: '',
+					}, //作業時間のボイス通知メッセージ
+					breakTime: {
+						type: String,
+						default: '',
+					}, //休憩時間のボイス通知メッセージ
+					longBreakTime: {
+						type: String,
+						default: '',
+					}, //長い休憩時間のボイス通知メッセージ
+					stopPomodoro: {
+						type: String,
+						default: '',
+					}, //ポモドーロ終了時のボイス通知メッセージ
+					lastModified: { type: String, default: null }, //ボイス通知メッセージの最終更新日時（ローカルのJSONと比較するためにString型）
+				},
+				speakerId: { type: Number, default: 3 }, //ボイス通知の話者ID（デフォルトは3:ずんだもん）
+			},
 		},
 	},
 	{ versionKey: false },

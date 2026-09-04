@@ -4,6 +4,8 @@ const {
 	MessageFlags,
 	EmbedBuilder,
 } = require('discord.js');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -34,9 +36,9 @@ module.exports = {
 				);
 				if (!role) {
 					const embed = new EmbedBuilder()
-						.setTitle('⚠️ エラー！')
+						.setTitle('❌ エラー！')
 						.setDescription(
-							'更新で使用するロールのうち１つ以上が存在しないため、ロールを更新できません。\n　※このコマンドを実行するために、以下の文言が含まれたロールが必要です。\n\n- 高校3年生\n- 高校2年生\n- 高校1年生\n- 中学3年生\n- 中学2年生\n- 中学1年生\n- 生徒\n- 卒業生',
+							'更新で使用するロールのうち１つ以上が存在しないため、ロールを更新できません。\n  ※このコマンドを実行するために、以下の文言が含まれたロールが必要です。\n\n- 高校3年生\n- 高校2年生\n- 高校1年生\n- 中学3年生\n- 中学2年生\n- 中学1年生\n- 生徒\n- 卒業生',
 						)
 						.setColor(0xff0000)
 						.setTimestamp();
@@ -54,7 +56,7 @@ module.exports = {
 				const compare = guildMe.roles.highest.comparePositionTo(otherRole);
 				if (compare < 0) {
 					const embed = new EmbedBuilder()
-						.setTitle('⚠️ エラー！')
+						.setTitle('❌ エラー！')
 						.setDescription(
 							'私に割り当てられている最高順位のロールよりも、更新するロールの位置の方が高いため、ロールを更新できません。私に割り当てられてるロールのうちの１つ以上を、以下のロールよりも上に設定して、再度実行してください。\n\n- 高校3年生\n- 高校2年生\n- 高校1年生\n- 中学3年生\n- 中学2年生\n- 中学1年生\n- 生徒\n- 卒業生',
 						)
@@ -118,10 +120,12 @@ module.exports = {
 					}
 				}
 
-				await interaction.editReply('✅更新が完了しました。');
+				await interaction.editReply('✅ 学年ロールの更新が完了しました。');
 			}
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

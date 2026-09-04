@@ -10,6 +10,8 @@ const {
 	FileBuilder,
 } = require('discord.js');
 const discordTranscripts = require('discord-html-transcripts');
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -33,7 +35,7 @@ module.exports = {
 					)
 			) {
 				return interaction.editReply(
-					'このチャンネルでメッセージログを保存する権限がありません。',
+					'❌ このチャンネルでメッセージログを保存する権限がありません。',
 				);
 			}
 
@@ -79,7 +81,9 @@ module.exports = {
 				flags: MessageFlags.IsComponentsV2,
 			});
 		} catch (err) {
-			const errorNotification = require('../lib/errorNotification.js');
+			const errorNotification = require(
+				path.join(dirname, 'lib/errorNotification.js'),
+			);
 			errorNotification(client, interaction, err);
 		}
 	},

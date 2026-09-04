@@ -9,9 +9,11 @@ const {
 	EmbedBuilder,
 } = require('discord.js');
 require('dotenv').config({ quiet: true });
+const path = require('path');
+const dirname = require('../lib/defineDirname.js');
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
-const serverSchema = require('../models/serverSchema.js');
+const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
 function checkInput(sendChannel, emoji, emojiCount) {
 	const errList = [];
@@ -136,21 +138,21 @@ module.exports = {
 					(await errList).includes('canNotGetChannelInfo')
 				) {
 					return interaction.reply({
-						content: `誤ったチャンネル情報を確認しました。正しくチャンネルを指定しており、BOTにチャンネルの閲覧権限とメッセージ履歴の閲覧権限がある事を確認してください。\n-# support info: ${(
+						content: `❌ 誤ったチャンネル情報を確認しました。正しくチャンネルを指定しており、BOTにチャンネルの閲覧権限とメッセージ履歴の閲覧権限がある事を確認してください。\n-# support info: ${(
 							await errList
 						).join(' and ')}`,
 						flags: MessageFlags.Ephemeral,
 					});
 				} else if ((await errList).includes('invalidEmoji')) {
 					return interaction.reply({
-						content: `誤った絵文字情報を確認しました。正しく絵文字が指定されているか確認してください。なお、他サーバーのカスタム絵文字は使用できません。\n-# support info: ${(
+						content: `❌ 誤った絵文字情報を確認しました。正しく絵文字が指定されているか確認してください。なお、他サーバーのカスタム絵文字は使用できません。\n-# support info: ${(
 							await errList
 						).join(' and ')}`,
 						flags: MessageFlags.Ephemeral,
 					});
 				} else if ((await errList).includes('invalidEmojiCount')) {
 					return interaction.reply({
-						content: `誤った絵文字数を確認しました。1以上の自然数を半角数字で入力してください。\n-# support info: ${(
+						content: `❌ 誤った絵文字数を確認しました。1以上の自然数を半角数字で入力してください。\n-# support info: ${(
 							await errList
 						).join(' and ')}`,
 						flags: MessageFlags.Ephemeral,
@@ -173,7 +175,7 @@ module.exports = {
 					if (pursedEmoji === undefined)
 						return interaction.reply({
 							content:
-								'確認出来ない絵文字が入力されました。絵文字が正しく入力されているか確認してください。',
+								'❌ 確認出来ない絵文字が入力されました。絵文字が正しく入力されているか確認してください。',
 							flags: MessageFlags.Ephemeral,
 						});
 				}
@@ -207,7 +209,9 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require('../lib/errorNotification.js');
+								const errorNotification = require(
+									path.join(dirname, 'lib/errorNotification.js'),
+								);
 								errorNotification(client, interaction, err);
 
 								const button = new ActionRowBuilder().addComponents(
@@ -220,20 +224,22 @@ module.exports = {
 								);
 								return interaction.reply({
 									content:
-										'スターボード作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
+										'❌ スターボード作成時に、DB更新エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 									components: [button],
 									flags: MessageFlags.Ephemeral,
 								});
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require('../lib/errorNotification.js');
+						const errorNotification = require(
+							path.join(dirname, 'lib/errorNotification.js'),
+						);
 						errorNotification(client, interaction, err);
 					});
 			} catch (err) {
 				console.error(err);
 				return interaction.reply(
-					'データ作成時にエラーが発生しました。時間を空けて再度お試しください。',
+					'❌ データ作成時にエラーが発生しました。時間を空けて再度お試しください。',
 				);
 			}
 		} else if (subcommand === 'view') {
@@ -244,7 +250,7 @@ module.exports = {
 				const starBoards = serverData.starboard.board;
 				if (!serverData.starboard.status && starBoards.length === 0) {
 					return interaction.reply({
-						content: 'このサーバーにはスターボードの設定がありません。',
+						content: '❌ このサーバーにはスターボードの設定がありません。',
 						flags: MessageFlags.Ephemeral,
 					});
 				}
@@ -257,13 +263,13 @@ module.exports = {
 				if (dataCheck1 || dataCheck2)
 					return interaction.reply({
 						content:
-							'スターボード関連で意図しないデータを確認しました。お手数ですが、サポートサーバーまでお問い合わせください。',
+							'❌ スターボード関連で意図しないデータを確認しました。お手数ですが、サポートサーバーまでお問い合わせください。',
 						flags: MessageFlags.Ephemeral,
 					});
 
 				// Embedを作成
 				const embed = new EmbedBuilder()
-					.setTitle('このサーバーのスターボード設定')
+					.setTitle('ℹ️ このサーバーのスターボード設定')
 					.setColor(0x00ff00)
 					.setDescription(
 						serverData.starboard.board
@@ -282,7 +288,7 @@ module.exports = {
 			} catch (err) {
 				console.error(err);
 				return interaction.reply(
-					'データ表示時にエラーが発生しました。時間を空けて再度お試しください。',
+					'❌ データ表示時にエラーが発生しました。時間を空けて再度お試しください。',
 				);
 			}
 		} else if (subcommand === 'off') {
@@ -308,7 +314,7 @@ module.exports = {
 			} catch (err) {
 				console.error(err);
 				return interaction.reply(
-					'データ削除時にエラーが発生しました。時間を空けて再度お試しください。',
+					'❌ データ削除時にエラーが発生しました。時間を空けて再度お試しください。',
 				);
 			}
 		}
