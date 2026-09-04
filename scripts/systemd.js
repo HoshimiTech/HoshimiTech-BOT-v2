@@ -107,6 +107,18 @@ function start() {
 		stdio: 'inherit',
 	});
 	console.log('Service started successfully.');
+	console.log(`Following logs for ${serviceName}...`);
+	console.log(
+		'Press Ctrl+C to stop viewing logs. The service will continue running.',
+	);
+
+	execFileSync(
+		'journalctl',
+		['-u', serviceName, '-f', '-n', '0', '--no-pager'],
+		{
+			stdio: 'inherit',
+		},
+	);
 }
 
 function stop() {
