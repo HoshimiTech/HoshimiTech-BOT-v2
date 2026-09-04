@@ -16,7 +16,7 @@ RUN apt-get update \
 COPY package*.json ./
 
 # 依存関係をインストールする
-RUN npm ci
+RUN npm ci --omit=dev
 
 # アプリケーションのソースをバンドルする
 COPY . .

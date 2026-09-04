@@ -1,10 +1,15 @@
 services:
   app:
-    container_name: HoshimiTech-Bot-app
     build:
       context: .
+      dockerfile: Dockerfile
+
+    container_name: HoshimiTech-Bot-app
+
     restart: always
+
     env_file:
       - .env
+
     ports:
       - '${PORT}:${PORT}'
