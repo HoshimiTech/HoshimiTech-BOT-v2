@@ -50,9 +50,10 @@ function ensureDependencies() {
 
 function renderServiceDefinition() {
 	const template = fs.readFileSync(templatePath, 'utf8');
-	const rendered = template
-		.replaceAll('{{PROJECT_ROOT}}', projectRoot)
-		.replaceAll('{{COMPOSE_DIRECTORY}}', composeDirectory);
+	const rendered = template.replaceAll(
+		'{{COMPOSE_DIRECTORY}}',
+		composeDirectory,
+	);
 
 	if (/{{[^}]+}}/.test(rendered)) {
 		throw new Error(
