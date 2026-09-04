@@ -449,6 +449,13 @@ module.exports = async (client, interaction) => {
 								{ serverData: serverData },
 							),
 						},
+						voiceNotificationSpeakerId: {
+							label: 'ボイス通知の話者ID',
+							value:
+								pomodoroSettings.voiceNotification.speakerId !== null
+									? pomodoroSettings.voiceNotification.speakerId
+									: 3,
+						},
 					};
 
 					const currentValue = labels[editType].value;
@@ -472,11 +479,7 @@ module.exports = async (client, interaction) => {
 						description = descriptionList.interval;
 					} else if (editType === 'voiceNotificationSpeakerId') {
 						const serverSpeakerData =
-							await voicevoxAudioController.getSpeakerInfo(
-								pomodoroSettings.voiceNotification.speakerId !== null
-									? pomodoroSettings.voiceNotification.speakerId
-									: 3,
-							);
+							await voicevoxAudioController.getSpeakerInfo(currentValue);
 
 						description = `現在は「${serverSpeakerData.name} (ID: ${serverSpeakerData.id})」に設定されています。設定は話者IDの数字のみを指定してください。話者IDは/pomodoro speakersで確認できます。`;
 					} else {
