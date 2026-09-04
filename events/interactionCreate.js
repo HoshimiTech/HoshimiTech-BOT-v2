@@ -490,7 +490,7 @@ module.exports = async (client, interaction) => {
 						.setCustomId(`pomodoro_settings_editModal_${editType}`)
 						.setTitle('ポモドーロタイマーのデフォルト設定の編集');
 					if (editType === 'voiceNotificationStatus') {
-						modal.setLabelComponents(
+						modal.addLabelComponents(
 							new LabelBuilder()
 								.setLabel(labels[editType].label)
 								.setDescription(
@@ -514,7 +514,7 @@ module.exports = async (client, interaction) => {
 								),
 						);
 					} else {
-						modal.setLabelComponents(
+						modal.addLabelComponents(
 							new LabelBuilder()
 								.setLabel(labels[editType].label)
 								.setDescription(description)
