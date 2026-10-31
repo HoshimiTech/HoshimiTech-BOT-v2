@@ -30,10 +30,10 @@
 		"@snazzah/davey": "^0.1.12",
 		"7zip-min": "^3.0.1",
 		"discord-html-transcripts": "^3.3.0-next-5eed3d",
-		"discord.js": "^14.27.0",
-		"dotenv": "^18.0.7",
+		"discord.js": "^14.28.0",
+		"dotenv": "^18.0.9",
 		"express": "^5.3.0",
-		"mongoose": "^9.11.1",
+		"mongoose": "^9.11.4",
 		"node-fetch": "^3.3.2",
 		"qrcode": "^1.5.4",
 		"twemoji-parser": "^14.0.0"
@@ -43,9 +43,9 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
-		"eslint": "^10.12.0",
+		"eslint": "^10.14.0",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-prettier": "^5.5.6",
+		"eslint-plugin-prettier": "^5.5.7",
 		"fs": "^0.0.1-security",
 		"globals": "^17.13.0",
 		"prettier": "^3.9.10"
