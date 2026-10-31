@@ -1,11 +1,10 @@
-const cheerio = require('cheerio');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const AdmZip = require('adm-zip');
 const { Readable } = require('stream');
+const sevenZip = require('7zip-min');
 
 const execAsync = promisify(exec);
 
@@ -17,18 +16,17 @@ const VOICEVOX_ENGINE_PATH = path.join(
 	process.platform === 'win32' ? 'run.exe' : 'run',
 );
 const VOICEVOX_MANIFEST_PATH = path.join(LIB_DIR, 'engine_manifest.json');
-const GITHUB_RELEASES_URL =
-	'https://github.com/VOICEVOX/voicevox/releases/latest';
+const GITHUB_RELEASES_API_URL =
+	'https://api.github.com/repos/VOICEVOX/voicevox_engine/releases/latest';
 
 const PLATFORM_CONFIG = {
 	win32: {
-		fileExtension: '.zip',
-		filePattern: 'voicevox-windows-cpu-',
+		filePattern: /^voicevox_engine-windows-cpu-(\d+(?:\.\d+)+)\.7z\.001$/,
 		executableName: 'run.exe',
 	},
 	linux: {
-		fileExtension: '.tar.gz',
-		filePattern: 'voicevox-linux-cpu-x64-',
+		filePattern:
+			/^voicevox_engine-linux-cpu-(arm64|x64)-(\d+(?:\.\d+)+)\.7z\.001$/,
 		executableName: 'run',
 	},
 };
@@ -83,28 +81,26 @@ async function getLatestVoiceVoxUrl() {
 		return null;
 	}
 
-	// 最新リリースページへリダイレクト
-	const res = await fetch(GITHUB_RELEASES_URL, { redirect: 'manual' });
-	const latestUrl = res.headers.get('location') || res.url;
-	const htmlRes = await fetch(latestUrl);
-	const html = await htmlRes.text();
-	const $ = cheerio.load(html);
-
-	let downloadUrl = null;
-	$(`a[href$="${config.fileExtension}"]`).each((_, el) => {
-		const href = $(el).attr('href');
-		if (href && href.includes(config.filePattern)) {
-			downloadUrl = href;
-			return false;
-		}
+	// Fetch the latest release information from GitHub API
+	const res = await fetch(GITHUB_RELEASES_API_URL, {
+		headers: { Accept: 'application/vnd.github+json' },
 	});
+	if (!res.ok) {
+		throw new Error(`最新リリースの取得に失敗しました: ${res.statusText}`);
+	}
+	const release = await res.json();
+	const architecture = process.arch === 'arm64' ? 'arm64' : 'x64';
+	const asset = release.assets.find((item) => {
+		if (!config.filePattern.test(item.name)) return false;
+		return platform === 'win32' || item.name.includes(`-${architecture}-`);
+	});
+	if (!asset) return null;
 
-	return downloadUrl;
-}
-
-function extractVersionFromUrl(url) {
-	const match = url.match(/voicevox-(?:windows|linux)-cpu-([\d.]+)/);
-	return match ? match[1].replace(/\.$/, '') : null;
+	return {
+		url: asset.browser_download_url,
+		name: asset.name,
+		version: asset.name.match(config.filePattern).at(-1),
+	};
 }
 
 function getLocalVersion() {
@@ -125,23 +121,21 @@ function getLocalVersion() {
 	}
 }
 
-function shouldSkipDownload(url) {
+function shouldSkipDownload(version) {
 	if (!fs.existsSync(VOICEVOX_ENGINE_PATH)) {
 		return false;
 	}
 
 	const localVersion = getLocalVersion();
-	const latestVersion = extractVersionFromUrl(url);
-
-	return localVersion && latestVersion && localVersion === latestVersion;
+	return localVersion && version && localVersion === version;
 }
 
-async function downloadFile(url, dest) {
-	if (shouldSkipDownload(url)) {
+async function downloadFile(url, dest, version) {
+	if (shouldSkipDownload(version)) {
 		console.warn(
-			`WARN: 既に最新バージョンのVOICEVOXが存在します。ダウンロードをスキップします。 (version: ${getLocalVersion()})`,
+			`WARN: 既に最新バージョンのVOICEVOX Engineが存在します。ダウンロードをスキップします。 (version: ${getLocalVersion()})`,
 		);
-		process.exit(1);
+		return false;
 	}
 
 	// 既存のVOICEVOXファイルをクリーンアップ
@@ -199,6 +193,7 @@ async function downloadFile(url, dest) {
 		fileStream.on('finish', resolve);
 		fileStream.on('error', reject);
 	});
+	return true;
 }
 
 async function makeExecutable(filePath) {
@@ -238,151 +233,29 @@ function getVoicevoxExecutablePath() {
 	return null;
 }
 
-async function extractAndClean(zipPath, extractDir) {
-	const zip = new AdmZip(zipPath);
-	zip.extractAllTo(extractDir, true);
-
-	// VOICEVOX/vv-engine のパス
-	const voicevoxDir = path.join(extractDir, 'VOICEVOX');
-	const vvEngineDir = path.join(voicevoxDir, 'vv-engine');
-
-	// vv-engineの中身をvoicevox直下に移動
+async function extractArchive(archivePath, extractDir) {
 	try {
-		const vvEngineItems = await fsp.readdir(vvEngineDir);
-		for (const item of vvEngineItems) {
-			await move(
-				path.join(vvEngineDir, item),
-				path.join(extractDir, item),
-				true,
-			);
+		const platform = process.platform;
+		const config = PLATFORM_CONFIG[platform];
+		const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+		const sourceDirName =
+			platform === 'win32' ? 'windows-cpu' : `linux-cpu-${arch}`;
+		const tempDir = path.join(extractDir, `.voicevox-extract-${process.pid}`);
+		await ensureDir(tempDir);
+		await sevenZip.unpack(archivePath, tempDir);
+		const sourceDir = path.join(tempDir, sourceDirName);
+		if (!fs.existsSync(sourceDir))
+			throw new Error(`${sourceDirName} フォルダが見つかりません`);
+		for (const item of await fsp.readdir(sourceDir)) {
+			await move(path.join(sourceDir, item), path.join(extractDir, item), true);
 		}
+		await remove(tempDir);
+		const executable = path.join(extractDir, config.executableName);
+		if (!fs.existsSync(executable))
+			throw new Error(`${config.executableName} が展開されませんでした`);
+		await makeExecutable(executable);
 	} catch (err) {
-		throw new Error(
-			`VOICEVOX/vv-engine フォルダが見つかりませんでした\n${err.message || String(err)}`,
-			{ cause: err },
-		);
-	}
-
-	// VOICEVOXフォルダごと削除（vv-engineも含めて不要ファイルを消す）
-	await remove(voicevoxDir);
-
-	// lib/voicevox直下にvv-engine以外のファイル・フォルダがあれば削除（念のため）
-	const items = await fsp.readdir(extractDir);
-	for (const item of items) {
-		if (item === '.' || item === '..') continue;
-		const itemPath = path.join(extractDir, item);
-		// vv-engineフォルダは既に消えているはずですが、念のため
-		if (item === 'vv-engine') {
-			await remove(itemPath);
-		}
-	}
-}
-
-async function extractTarGz(tarGzPath, extractDir) {
-	try {
-		// tar.gzファイルを解凍
-		await execAsync(`tar -xzf "${tarGzPath}" -C "${extractDir}"`);
-		console.info(`INFO: [完了] tar.gzファイルを解凍しました: ${tarGzPath}`);
-
-		// 解凍されたディレクトリを確認
-		const items = await fsp.readdir(extractDir);
-		console.info('INFO: [情報] 解凍後のディレクトリ内容:', items);
-
-		// VOICEVOXディレクトリを探す
-		const voicevoxDir = items.find((item) => {
-			const itemPath = path.join(extractDir, item);
-			return (
-				fs.statSync(itemPath).isDirectory() &&
-				(item === 'VOICEVOX' || item.toLowerCase().includes('voicevox'))
-			);
-		});
-
-		if (voicevoxDir) {
-			const voicevoxPath = path.join(extractDir, voicevoxDir);
-			console.info(
-				`INFO: [情報] VOICEVOXディレクトリが見つかりました: ${voicevoxPath}`,
-			);
-
-			// VOICEVOX/vv-engine のパス
-			const vvEngineDir = path.join(voicevoxPath, 'vv-engine');
-
-			if (fs.existsSync(vvEngineDir)) {
-				console.info(
-					`INFO: [情報] vv-engineディレクトリが見つかりました: ${vvEngineDir}`,
-				);
-
-				// vv-engineの中身をvoicevox直下に移動
-				const vvEngineItems = await fsp.readdir(vvEngineDir);
-				for (const item of vvEngineItems) {
-					await move(
-						path.join(vvEngineDir, item),
-						path.join(extractDir, item),
-						true,
-					);
-				}
-				console.info('INFO: [完了] vv-engine の内容を移動しました。');
-			} else {
-				// vv-engineがない場合は、VOICEVOXディレクトリの中身をそのまま移動
-				console.info(
-					'INFO: [開始] vv-engine が見つからないため、VOICEVOX ディレクトリの中身を移動します。',
-				);
-				const voicevoxItems = await fsp.readdir(voicevoxPath);
-				for (const item of voicevoxItems) {
-					await move(
-						path.join(voicevoxPath, item),
-						path.join(extractDir, item),
-						true,
-					);
-				}
-				console.info(
-					'INFO: [完了] VOICEVOX ディレクトリの中身の移動が完了しました。',
-				);
-			}
-
-			// VOICEVOXフォルダを削除
-			await remove(voicevoxPath);
-			console.info('INFO: [完了] VOICEVOX ディレクトリを削除しました。');
-		} else {
-			// VOICEVOXディレクトリが見つからない場合は、最初に見つかったディレクトリの中身を移動
-			const extractedDir = items.find((item) => {
-				const itemPath = path.join(extractDir, item);
-				return fs.statSync(itemPath).isDirectory();
-			});
-
-			if (extractedDir) {
-				console.info(
-					`INFO: [開始] 解凍されたディレクトリを処理します: ${extractedDir}`,
-				);
-				const sourcePath = path.join(extractDir, extractedDir);
-				const sourceItems = await fsp.readdir(sourcePath);
-
-				// 解凍されたディレクトリの中身を上の階層に移動
-				for (const item of sourceItems) {
-					await move(
-						path.join(sourcePath, item),
-						path.join(extractDir, item),
-						true,
-					);
-				}
-
-				// 空になったディレクトリを削除
-				await remove(sourcePath);
-				console.info(
-					'INFO: [完了] 解凍されたディレクトリの処理が完了しました。',
-				);
-			}
-		}
-
-		// runファイルに実行権限を付与
-		const runPath = path.join(extractDir, 'run');
-		if (fs.existsSync(runPath)) {
-			await makeExecutable(runPath);
-			console.info(
-				`INFO: [完了] run ファイルに実行権限を付与しました: ${runPath}`,
-			);
-		}
-	} catch (err) {
-		throw new Error(`tar.gz解凍エラー: ${err.message || String(err)}`, {
+		throw new Error(`7z解凍エラー: ${err.message || String(err)}`, {
 			cause: err,
 		});
 	}
@@ -408,36 +281,26 @@ async function setupVoicevox() {
 
 	logSetupHeader(platform);
 
-	const downloadUrl = await getLatestVoiceVoxUrl();
-	if (!downloadUrl) {
+	const releaseAsset = await getLatestVoiceVoxUrl();
+	if (!releaseAsset) {
 		const config = PLATFORM_CONFIG[platform];
-		const expectedPattern = `${config.filePattern}*${config.fileExtension}`;
+		const expectedPattern = config.filePattern.toString();
 		throw new Error(`${expectedPattern}が見つかりませんでした`);
 	}
 
-	const fileName = path.basename(downloadUrl);
+	const { url: downloadUrl, name: fileName, version } = releaseAsset;
 	const filePath = path.join(LIB_DIR, fileName);
 
 	console.info('INFO: [開始] ダウンロードを開始します:', downloadUrl);
-	await downloadFile(downloadUrl, filePath);
+	const downloaded = await downloadFile(downloadUrl, filePath, version);
+	if (!downloaded) return;
 	process.stdout.write('\n');
 	console.info('INFO: [完了] ダウンロードが完了しました:', filePath);
 
-	if (platform === 'win32') {
-		// Windows: zipファイルを展開
-		await extractAndClean(filePath, LIB_DIR);
+	if (platform === 'win32' || platform === 'linux') {
+		await extractArchive(filePath, LIB_DIR);
 		await remove(filePath);
 		console.info('INFO: [完了] セットアップが完了しました。');
-	} else if (platform === 'linux') {
-		// Linux: tar.gzファイルを展開
-		await extractTarGz(filePath, LIB_DIR);
-		await remove(filePath);
-		console.info('INFO: [完了] セットアップが完了しました。');
-		const runPath = path.join(LIB_DIR, 'run');
-		console.info(`INFO: [情報] VOICEVOX は以下のパスにあります: ${runPath}`);
-		console.info(
-			'INFO: [情報] 使用時は直接この run ファイルを実行してください。',
-		);
 	}
 
 	console.info('INFO: [完了] VOICEVOX セットアップ処理が完了しました。');
