@@ -4,6 +4,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const { Readable } = require('stream');
+const { pipeline } = require('stream/promises');
 const sevenZip = require('7zip-min');
 
 const execAsync = promisify(exec);
@@ -187,12 +188,9 @@ async function downloadFile(url, dest, version) {
 		}
 	});
 
-	await new Promise((resolve, reject) => {
-		nodeStream.pipe(fileStream);
-		nodeStream.on('error', reject);
-		fileStream.on('finish', resolve);
-		fileStream.on('error', reject);
-	});
+	// pipeline は書き込み先が完全に close されるまで待つ。
+	// ('finish' だけだとWindowsでファイルハンドルが残り、7zが開けない)
+	await pipeline(nodeStream, fileStream);
 	return true;
 }
 
