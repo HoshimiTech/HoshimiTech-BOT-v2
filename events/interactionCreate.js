@@ -1,4 +1,5 @@
 const Sentry = require('@sentry/node');
+const withSentryContext = require('../lib/sentryContext.js');
 const {
 	InteractionType,
 	ApplicationCommandType,
@@ -37,7 +38,7 @@ const fetch = (...args) =>
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
 
-module.exports = async (client, interaction) => {
+const handler = async (client, interaction) => {
 	try {
 		// DMでの「DM starBoard」機能の、メッセージ削除は例外処理
 		if (
@@ -1187,3 +1188,12 @@ module.exports = async (client, interaction) => {
 		Sentry.captureException(err);
 	}
 };
+
+module.exports = withSentryContext(handler, (interaction) => ({
+	command:
+		interaction.commandName ??
+		(interaction.customId ? `component:${interaction.customId}` : undefined),
+	guild: interaction.guild,
+	channel: interaction.channel,
+	user: interaction.user,
+}));

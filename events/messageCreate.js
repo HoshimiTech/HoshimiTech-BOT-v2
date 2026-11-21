@@ -1,10 +1,11 @@
 const Sentry = require('@sentry/node');
+const withSentryContext = require('../lib/sentryContext.js');
 const { MessageFlags, EmbedBuilder } = require('discord.js');
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
 const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
 
-module.exports = (client, message) => {
+const handler = (client, message) => {
 	// botは無視
 	if (message.author.bot) return;
 
@@ -85,3 +86,10 @@ module.exports = (client, message) => {
 			Sentry.captureException(err);
 		});
 };
+
+module.exports = withSentryContext(handler, (message) => ({
+	command: 'messageCreate',
+	guild: message.guild,
+	channel: message.channel,
+	user: message.author,
+}));

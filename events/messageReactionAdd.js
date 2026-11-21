@@ -1,4 +1,5 @@
 const Sentry = require('@sentry/node');
+const withSentryContext = require('../lib/sentryContext.js');
 const {
 	ActionRowBuilder,
 	ButtonBuilder,
@@ -12,7 +13,7 @@ const messageTransport = require(path.join(dirname, 'lib/messageTransport.js'));
 // twemoji-parserから判定用の正規表現を取得(gオプション付き)
 const twemojiRegex = require('twemoji-parser/dist/lib/regex').default;
 
-module.exports = async (client, reaction, user) => {
+const handler = async (client, reaction, user) => {
 	// 必要な情報をキャッシュ
 	if (reaction.partial) await reaction.fetch();
 	if (user.partial) await user.fetch();
@@ -89,3 +90,10 @@ module.exports = async (client, reaction, user) => {
 			throw new Error(err.message || String(err), { cause: err });
 		});
 };
+
+module.exports = withSentryContext(handler, (reaction, user) => ({
+	command: 'messageReactionAdd',
+	guild: reaction.message?.guild,
+	channel: reaction.message?.channel,
+	user,
+}));
