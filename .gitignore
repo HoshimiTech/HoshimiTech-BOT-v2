@@ -9,5 +9,3 @@ lib/pomodoro/voicevox/*
 
 # assets/audio/<数字>は除外
 assets/audio/*
-# でも、一次ファイルは対象
-!assets/audio/voiceList.json
