@@ -72,6 +72,7 @@ const handler = async (client, reaction, user) => {
 			}
 		})
 		.catch(async (err) => {
+			Sentry.captureException(err);
 			const button = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setLabel('再招待はこちらから')
@@ -86,8 +87,6 @@ const handler = async (client, reaction, user) => {
 				components: [button],
 				flags: MessageFlags.Ephemeral,
 			});
-
-			throw new Error(err.message || String(err), { cause: err });
 		});
 };
 

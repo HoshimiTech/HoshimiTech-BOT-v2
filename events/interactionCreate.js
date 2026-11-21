@@ -73,13 +73,13 @@ const handler = async (client, interaction) => {
 							interaction.commandType === propsJson.type
 						) {
 							try {
-								return props.run(client, interaction);
+								return await props.run(client, interaction);
 							} catch (err) {
+								Sentry.captureException(err);
 								await interaction?.reply({
 									content: '❌ 何らかのエラーが発生しました。',
 									flags: MessageFlags.Ephemeral,
 								});
-								throw new Error(err.message || String(err), { cause: err });
 							}
 						}
 					});
@@ -581,14 +581,12 @@ const handler = async (client, interaction) => {
 							});
 							serverData
 								.save()
-								.catch(async (err) => {
-									await interaction.reply(
-										'❌ エラーが発生しました。コンソールを確認してください。',
-									);
-									throw new Error(err.message || String(err), { cause: err });
-								})
 								.then(async () => {
 									await interaction.reply('✅ 登録しました。');
+								})
+								.catch(async (err) => {
+									Sentry.captureException(err);
+									await interaction.reply('❌ エラーが発生しました。');
 								});
 						} else {
 							await interaction.reply({
@@ -607,10 +605,8 @@ const handler = async (client, interaction) => {
 									await interaction.reply('✅ 登録を解除しました。');
 								})
 								.catch(async (err) => {
-									await interaction.reply(
-										'❌ エラーが発生しました。コンソールを確認してください。',
-									);
-									throw new Error(err.message || String(err), { cause: err });
+									Sentry.captureException(err);
+									await interaction.reply('❌ エラーが発生しました。');
 								});
 						} else {
 							await interaction.reply({
