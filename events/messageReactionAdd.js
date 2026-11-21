@@ -4,7 +4,6 @@ const {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
-	MessageFlags,
 } = require('discord.js');
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
@@ -21,58 +20,12 @@ const handler = async (client, reaction, user) => {
 	if (user.bot) return;
 
 	//db取得して、該当するメッセージは転送
-	serverSchema
-		.findById(reaction.message.guild.id)
-		.then((serverData) => {
-			// ステータス確認
-			if (!serverData.starboard.status) return;
-			// 既に送信済みか確認
-			if (
-				serverData.starboard.transportedMessages.includes(reaction.message?.id)
-			)
-				return;
-
-			// 絵文字の種類を判定
-			// カスタム絵文字は絵文字名とIDが別々で来るので、変換
-			if (!reaction.emoji.name.match(twemojiRegex)) {
-				reaction.emoji.name = reaction.emoji.animated
-					? `<a:${reaction.emoji.name}:${reaction.emoji.id}>`
-					: `<:${reaction.emoji.name}:${reaction.emoji.id}>`;
-			}
-
-			// 該当する絵文字か判定
-			const emojis = serverData.starboard.board.map((board) => board.emoji);
-			if (emojis.includes(reaction.emoji.name)) {
-				// 該当する絵文字の場合、絵文字数を確認する
-				reaction.message
-					.fetch()
-					.then(async (message) => {
-						const reactionCount = message.reactions.cache.get(
-							// カスタム絵文字の場合は絵文字ID、unicode絵文字の場合はその絵文字を検索する必要があるのでこの記法
-							reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name,
-						).count;
-
-						const boardInfo = serverData.starboard.board.find(
-							(board) => board.emoji === reaction.emoji.name,
-						);
-						if (reactionCount >= boardInfo.emojiAmount) {
-							// メッセージを転送する
-							await messageTransport(client, message, boardInfo._id);
-
-							// 転送したメッセージIDを保存
-							serverData.starboard.transportedMessages.push(message.id);
-							serverData.save().catch((err) => {
-								Sentry.captureException(err);
-							});
-						}
-					})
-					.catch((err) => {
-						Sentry.captureException(err);
-					});
-			}
-		})
-		.catch(async (err) => {
-			Sentry.captureException(err);
+	let serverData;
+	try {
+		serverData = await serverSchema.findById(reaction.message.guild.id);
+	} catch (err) {
+		Sentry.captureException(err);
+		try {
 			const button = new ActionRowBuilder().addComponents(
 				new ButtonBuilder()
 					.setLabel('再招待はこちらから')
@@ -85,9 +38,53 @@ const handler = async (client, reaction, user) => {
 				content:
 					'❌ メッセージリアクション受信時に、DB取得エラーが発生しました。お手数ですが、BOTを一度サーバーからkickしていただき、再招待をお願い致します。',
 				components: [button],
-				flags: MessageFlags.Ephemeral,
 			});
-		});
+		} catch (replyErr) {
+			Sentry.captureException(replyErr);
+		}
+		return;
+	}
+
+	try {
+		// ステータス確認
+		if (!serverData.starboard.status) return;
+		// 既に送信済みか確認
+		if (serverData.starboard.transportedMessages.includes(reaction.message?.id))
+			return;
+
+		// 絵文字の種類を判定
+		// カスタム絵文字は絵文字名とIDが別々で来るので、変換
+		if (!reaction.emoji.name.match(twemojiRegex)) {
+			reaction.emoji.name = reaction.emoji.animated
+				? `<a:${reaction.emoji.name}:${reaction.emoji.id}>`
+				: `<:${reaction.emoji.name}:${reaction.emoji.id}>`;
+		}
+
+		// 該当する絵文字か判定
+		const emojis = serverData.starboard.board.map((board) => board.emoji);
+		if (!emojis.includes(reaction.emoji.name)) return;
+
+		// 該当する絵文字の場合、絵文字数を確認する
+		const message = await reaction.message.fetch();
+		const reactionCount = message.reactions.cache.get(
+			// カスタム絵文字の場合は絵文字ID、unicode絵文字の場合はその絵文字を検索する必要があるのでこの記法
+			reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name,
+		).count;
+
+		const boardInfo = serverData.starboard.board.find(
+			(board) => board.emoji === reaction.emoji.name,
+		);
+		if (reactionCount >= boardInfo.emojiAmount) {
+			// メッセージを転送する(失敗した場合は例外となり、転送済みとして記録されない)
+			await messageTransport(client, message, boardInfo._id);
+
+			// 転送したメッセージIDを保存
+			serverData.starboard.transportedMessages.push(message.id);
+			await serverData.save();
+		}
+	} catch (err) {
+		Sentry.captureException(err);
+	}
 };
 
 module.exports = withSentryContext(handler, (reaction, user) => ({

@@ -57,33 +57,41 @@ const handler = async (client, interaction) => {
 		} else {
 			// スラッシュコマンド応答
 			if (interaction?.type === InteractionType.ApplicationCommand) {
-				fs.readdir(path.join(dirname, 'commands'), (err, files) => {
-					if (err) throw err;
-					files.forEach(async (f) => {
-						const props = require(path.join(dirname, 'commands', f));
-						const propsJson = props.data.toJSON();
+				const files = await fs.promises.readdir(path.join(dirname, 'commands'));
+				for (const f of files) {
+					const props = require(path.join(dirname, 'commands', f));
+					const propsJson = props.data.toJSON();
 
-						//propsJsonがundefinedだった場合は、スラッシュコマンドとして、タイプを1にする
-						if (propsJson.type === undefined) {
-							propsJson.type = ApplicationCommandType.ChatInput;
-						}
+					//propsJsonがundefinedだった場合は、スラッシュコマンドとして、タイプを1にする
+					if (propsJson.type === undefined) {
+						propsJson.type = ApplicationCommandType.ChatInput;
+					}
 
-						if (
-							interaction.commandName === propsJson.name &&
-							interaction.commandType === propsJson.type
-						) {
+					if (
+						interaction.commandName === propsJson.name &&
+						interaction.commandType === propsJson.type
+					) {
+						try {
+							return await props.run(client, interaction);
+						} catch (err) {
+							Sentry.captureException(err);
+							const errorMessage = {
+								content: '❌ 何らかのエラーが発生しました。',
+								flags: MessageFlags.Ephemeral,
+							};
 							try {
-								return await props.run(client, interaction);
-							} catch (err) {
-								Sentry.captureException(err);
-								await interaction?.reply({
-									content: '❌ 何らかのエラーが発生しました。',
-									flags: MessageFlags.Ephemeral,
-								});
+								if (interaction.replied || interaction.deferred) {
+									await interaction.followUp(errorMessage);
+								} else {
+									await interaction.reply(errorMessage);
+								}
+							} catch (replyErr) {
+								Sentry.captureException(replyErr);
 							}
+							return;
 						}
-					});
-				});
+					}
+				}
 			}
 
 			// ボタン応答
@@ -579,15 +587,14 @@ const handler = async (client, interaction) => {
 								},
 								// ポモドーロタイマーの設定は、スキーマから設定
 							});
-							serverData
-								.save()
-								.then(async () => {
-									await interaction.reply('✅ 登録しました。');
-								})
-								.catch(async (err) => {
-									Sentry.captureException(err);
-									await interaction.reply('❌ エラーが発生しました。');
-								});
+							try {
+								await serverData.save();
+							} catch (err) {
+								Sentry.captureException(err);
+								await interaction.reply('❌ エラーが発生しました。');
+								return;
+							}
+							await interaction.reply('✅ 登録しました。');
 						} else {
 							await interaction.reply({
 								content: '❌ そのサーバーは既に登録済みです。',
@@ -599,15 +606,14 @@ const handler = async (client, interaction) => {
 						const id = interaction.fields.getTextInputValue('unregister_id');
 						const serverData = await serverSchema.findById(id);
 						if (serverData) {
-							serverSchema
-								.deleteOne({ _id: id })
-								.then(async () => {
-									await interaction.reply('✅ 登録を解除しました。');
-								})
-								.catch(async (err) => {
-									Sentry.captureException(err);
-									await interaction.reply('❌ エラーが発生しました。');
-								});
+							try {
+								await serverSchema.deleteOne({ _id: id });
+							} catch (err) {
+								Sentry.captureException(err);
+								await interaction.reply('❌ エラーが発生しました。');
+								return;
+							}
+							await interaction.reply('✅ 登録を解除しました。');
 						} else {
 							await interaction.reply({
 								content: '❌ そのサーバーは既に登録解除済みです。',
