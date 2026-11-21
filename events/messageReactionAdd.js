@@ -1,10 +1,6 @@
 const Sentry = require('@sentry/node');
 const withSentryContext = require('../lib/sentryContext.js');
-const {
-	ActionRowBuilder,
-	ButtonBuilder,
-	ButtonStyle,
-} = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
 const serverSchema = require(path.join(dirname, 'models/serverSchema.js'));
