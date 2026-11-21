@@ -1,4 +1,7 @@
+require('./instrument.js');
+const Sentry = require('@sentry/node');
 const fs = require('fs');
+const http = require('http');
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const dirname = require('./lib/defineDirname.js');
 const path = require('path');
@@ -20,8 +23,6 @@ const client = new Client({
 	],
 });
 const mongoose = require('mongoose');
-const express = require('express');
-const app = express();
 require('dotenv').config({ quiet: true });
 const { spawn } = require('child_process');
 
@@ -45,6 +46,10 @@ fs.readdir(path.join(dirname, 'events'), (_err, files) => {
 		delete require.cache[require.resolve(path.join(dirname, 'events', file))];
 	});
 });
+
+// discord.jsのクライアントエラーをSentryに送信
+client.on('error', (err) => Sentry.captureException(err));
+client.on('shardError', (err) => Sentry.captureException(err));
 
 client.commands = [];
 fs.readdir(path.join(dirname, 'commands'), (err, files) => {
@@ -98,10 +103,21 @@ if (mongodb_TOKEN) {
 	}, 2000);
 }
 
-app.get('/', (request, response) => {
-	response?.sendStatus(200);
+// ヘルスチェック用HTTPサーバー
+const server = http.createServer((request, response) => {
+	if (request.method === 'GET' && request.url === '/') {
+		response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+		response.end('OK');
+		return;
+	}
+	response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+	response.end('Not Found');
 });
-app.listen(PORT, () => {
+server.on('error', (err) => {
+	// 未捕捉例外としてSentryに送信される
+	throw new Error(`HTTPサーバーの起動に失敗しました: ${err}`, { cause: err });
+});
+server.listen(PORT, () => {
 	console.info(`[NodeJS] Application Listening on Port ${PORT}`);
 });
 
