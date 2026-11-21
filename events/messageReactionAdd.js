@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const {
 	ActionRowBuilder,
 	ButtonBuilder,
@@ -60,12 +61,12 @@ module.exports = async (client, reaction, user) => {
 							// 転送したメッセージIDを保存
 							serverData.starboard.transportedMessages.push(message.id);
 							serverData.save().catch((err) => {
-								console.error(err);
+								Sentry.captureException(err);
 							});
 						}
 					})
 					.catch((err) => {
-						console.error(err);
+						Sentry.captureException(err);
 					});
 			}
 		})

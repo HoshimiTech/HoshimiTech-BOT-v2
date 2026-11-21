@@ -1,7 +1,6 @@
+const Sentry = require('@sentry/node');
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const QRCode = require('qrcode');
-const path = require('path');
-const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -41,10 +40,7 @@ module.exports = {
 				});
 			});
 		} catch (err) {
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, interaction, err);
+			Sentry.captureException(err);
 		}
 	},
 };

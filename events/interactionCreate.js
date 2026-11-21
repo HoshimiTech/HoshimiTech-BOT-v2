@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const {
 	InteractionType,
 	ApplicationCommandType,
@@ -928,10 +929,7 @@ module.exports = async (client, interaction) => {
 										});
 									})
 									.catch((err) => {
-										const errorNotification = require(
-											path.join(dirname, 'lib/errorNotification.js'),
-										);
-										errorNotification(client, interaction, err);
+										Sentry.captureException(err);
 
 										const button = new ActionRowBuilder().addComponents(
 											new ButtonBuilder()
@@ -950,10 +948,7 @@ module.exports = async (client, interaction) => {
 									});
 							})
 							.catch((err) => {
-								const errorNotification = require(
-									path.join(dirname, 'lib/errorNotification.js'),
-								);
-								errorNotification(client, interaction, err);
+								Sentry.captureException(err);
 
 								const button = new ActionRowBuilder().addComponents(
 									new ButtonBuilder()
@@ -1189,9 +1184,6 @@ module.exports = async (client, interaction) => {
 			}
 		}
 	} catch (err) {
-		const errorNotification = require(
-			path.join(dirname, 'lib/errorNotification.js'),
-		);
-		errorNotification(client, interaction, err);
+		Sentry.captureException(err);
 	}
 };

@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const {
 	SlashCommandBuilder,
 	ChannelType,
@@ -209,10 +210,7 @@ module.exports = {
 								});
 							})
 							.catch((err) => {
-								const errorNotification = require(
-									path.join(dirname, 'lib/errorNotification.js'),
-								);
-								errorNotification(client, interaction, err);
+								Sentry.captureException(err);
 
 								const button = new ActionRowBuilder().addComponents(
 									new ButtonBuilder()
@@ -231,13 +229,10 @@ module.exports = {
 							});
 					})
 					.catch((err) => {
-						const errorNotification = require(
-							path.join(dirname, 'lib/errorNotification.js'),
-						);
-						errorNotification(client, interaction, err);
+						Sentry.captureException(err);
 					});
 			} catch (err) {
-				console.error(err);
+				Sentry.captureException(err);
 				return interaction.reply(
 					'❌ データ作成時にエラーが発生しました。時間を空けて再度お試しください。',
 				);
@@ -286,7 +281,7 @@ module.exports = {
 					embeds: [embed],
 				});
 			} catch (err) {
-				console.error(err);
+				Sentry.captureException(err);
 				return interaction.reply(
 					'❌ データ表示時にエラーが発生しました。時間を空けて再度お試しください。',
 				);
@@ -312,7 +307,7 @@ module.exports = {
 				await serverData.save();
 				return interaction.reply('✅データの削除に成功しました！');
 			} catch (err) {
-				console.error(err);
+				Sentry.captureException(err);
 				return interaction.reply(
 					'❌ データ削除時にエラーが発生しました。時間を空けて再度お試しください。',
 				);

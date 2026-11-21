@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const {
 	SlashCommandBuilder,
 	MessageFlags,
@@ -426,10 +427,7 @@ module.exports = {
 				return interaction.reply({ embeds: [embed] });
 			}
 		} catch (err) {
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, interaction, err);
+			Sentry.captureException(err);
 		}
 	},
 };

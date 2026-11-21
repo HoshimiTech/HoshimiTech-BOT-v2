@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const { REST, Routes, ActivityType } = require('discord.js');
 const os = require('node:os');
 require('dotenv').config({ quiet: true });
@@ -27,6 +28,7 @@ module.exports = async (client) => {
 			console.info(
 				`❌ スラッシュコマンドの再読み込み時にエラーが発生しました。：\n${err}`,
 			);
+			Sentry.captureException(err);
 		}
 	})();
 
@@ -69,7 +71,7 @@ module.exports = async (client) => {
 						);
 					})
 					.catch((err) => {
-						console.error(err);
+						Sentry.captureException(err);
 						return client.channels.cache
 							.get(consoleChannel)
 							?.send({
@@ -107,7 +109,7 @@ module.exports = async (client) => {
 						);
 					})
 					.catch((err) => {
-						console.error(err);
+						Sentry.captureException(err);
 					});
 			}
 		}

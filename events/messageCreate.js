@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const { MessageFlags, EmbedBuilder } = require('discord.js');
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
@@ -81,9 +82,6 @@ module.exports = (client, message) => {
 		})
 		.catch((err) => {
 			// ユーザー側には何も表示せず、裏にログを残す。
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, message, err);
+			Sentry.captureException(err);
 		});
 };

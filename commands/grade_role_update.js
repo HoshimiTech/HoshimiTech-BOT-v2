@@ -1,11 +1,10 @@
+const Sentry = require('@sentry/node');
 const {
 	PermissionsBitField,
 	SlashCommandBuilder,
 	MessageFlags,
 	EmbedBuilder,
 } = require('discord.js');
-const path = require('path');
-const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -123,10 +122,7 @@ module.exports = {
 				await interaction.editReply('✅ 学年ロールの更新が完了しました。');
 			}
 		} catch (err) {
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, interaction, err);
+			Sentry.captureException(err);
 		}
 	},
 };

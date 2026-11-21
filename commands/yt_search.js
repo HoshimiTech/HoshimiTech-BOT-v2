@@ -1,7 +1,6 @@
+const Sentry = require('@sentry/node');
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const ytsr = require('@distube/ytsr');
-const path = require('path');
-const dirname = require('../lib/defineDirname.js');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -74,10 +73,7 @@ module.exports = {
 				},
 			);
 		} catch (err) {
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, interaction, err);
+			Sentry.captureException(err);
 		}
 	},
 };

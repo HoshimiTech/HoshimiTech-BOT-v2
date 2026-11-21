@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const dirname = require('../lib/defineDirname.js');
@@ -279,10 +280,7 @@ module.exports = {
 				}
 			}
 		} catch (err) {
-			const errorNotification = require(
-				path.join(dirname, 'lib/errorNotification.js'),
-			);
-			errorNotification(client, interaction, err);
+			Sentry.captureException(err);
 		}
 	},
 };
